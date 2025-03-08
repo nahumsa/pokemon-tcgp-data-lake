@@ -15,6 +15,7 @@ class Participant(BaseModel):
     points: Annotated[Optional[TextExtractorValidator], Field(alias="Points")] = None
 
     @computed_field
+    @property
     def decklist_link(self) -> Optional[str]:
         if self.raw_decklist:
             return BASE_URL + self.raw_decklist.css_first("a").attributes.get("href")
@@ -27,3 +28,20 @@ class Tournament(BaseModel):
     players: Annotated[Optional[str], Field(alias="data-players")]
     winner: Annotated[Optional[str], Field(alias="data-winner")]
     tournament_page: Optional[str]
+
+class Card(BaseModel):
+    name: str
+    code: Optional[str]
+    quantity: int
+
+    @computed_field
+    @property
+    def kind(self) -> str:
+        return "pokemon" if self.code else "trainer"
+
+class Deck(BaseModel):
+    player: str
+    tournament: str
+    decklist: list[Card]
+    decklist_link: Optional[str]
+    
