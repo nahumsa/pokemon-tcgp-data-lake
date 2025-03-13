@@ -3,7 +3,14 @@ import requests
 from typing import Optional
 from selectolax.parser import HTMLParser
 
-from payload import FormatEnum, GameEnum, PlatformEnum, TimeEnum, TournamentPayload, TypeEnum
+from payload import (
+    FormatEnum,
+    GameEnum,
+    PlatformEnum,
+    TimeEnum,
+    TournamentPayload,
+    TypeEnum,
+)
 from constants import BASE_URL, REGEX_CARD_PATTERN
 from models import Deck, Participant, Tournament, Card
 
@@ -27,6 +34,7 @@ def extract_tournaments(response: requests.Response) -> list[Tournament]:
 
     return tournament_list
 
+
 def get_tournaments(tournament_params: TournamentPayload) -> list[Tournament]:
     has_data = True
     all_tournaments = []
@@ -46,31 +54,44 @@ def get_tournaments(tournament_params: TournamentPayload) -> list[Tournament]:
 
     return all_tournaments
 
+
 def extract_participants(link: Optional[str]) -> list[Participant]:
     if not link:
         raise ValueError("tournament link not provided")
 
     response = requests.get(link)
     tree = HTMLParser(response.text)
-    header_element = tree.css_first("body > div.main > div > div.standings.completed > table > tbody > tr:nth-child(1)")
+    header_element = tree.css_first(
+        "body > div.main > div > div.standings.completed > table > tbody > tr:nth-child(1)"
+    )
     headers = [i.text() for i in header_element.css("th")]
 
-    element_list = tree.css("body > div.main > div > div.standings.completed > table > tbody > tr:nth-child(n)")[1:]
+    element_list = tree.css(
+        "body > div.main > div > div.standings.completed > table > tbody > tr:nth-child(n)"
+    )[1:]
 
-    return [Participant(tournament_link=link, **dict(zip(headers,[i for i in element.css("td")]))) for element in element_list]
+    return [
+        Participant(
+            tournament_link=link, **dict(zip(headers, [i for i in element.css("td")]))
+        )
+        for element in element_list
+    ]
 
 
 def parse_card(text: str) -> Card:
     match = re.match(REGEX_CARD_PATTERN, text)
 
     if match:
-        return Card(**{
-            "quantity": int(match.group(1)),
-            "name": match.group(2).strip(),
-            "code": match.group(3) if match.group(3) else None
-        })
+        return Card(
+            **{
+                "quantity": int(match.group(1)),
+                "name": match.group(2).strip(),
+                "code": match.group(3) if match.group(3) else None,
+            }
+        )
 
     raise ValueError("invalid card string")
+
 
 def extract_decklist(link: Optional[str]) -> list[Card]:
     if not link:
@@ -86,6 +107,7 @@ def extract_decklist(link: Optional[str]) -> list[Card]:
 
     return decklist
 
+
 if __name__ == "__main__":
     payload = TournamentPayload(
         game=GameEnum.POCKET,
@@ -99,11 +121,12 @@ if __name__ == "__main__":
     for tournament in all_tournaments:
         participants = extract_participants(tournament.tournament_page)
 
-        for part in participants:
-            part_deck = Deck(player=part.name,
-                             tournament=part.tournament_link,
-                             decklist=extract_decklist(part.decklist_link),
-                             decklist_link=part.decklist_link)
-            print(part_deck.model_dump())
-            break
-        
+        all_decks = [
+            Deck(
+                player=part.name,
+                tournament=part.tournament_link,
+                decklist=extract_decklist(part.decklist_link),
+                decklist_link=part.decklist_link,
+            )
+            for part in participants
+        ]
