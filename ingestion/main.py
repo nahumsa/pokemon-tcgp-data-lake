@@ -12,7 +12,7 @@ from .payload import (
     TypeEnum,
 )
 from .constants import BASE_URL
-from .extractor import (
+from .extractors import (
     extract_participants,
     extract_tournaments,
     get_deck,
