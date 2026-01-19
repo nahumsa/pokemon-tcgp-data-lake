@@ -5,12 +5,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "boto3>=1.37.9",
     "pyarrow>=19.0.1",
     "pydantic-settings>=2.8.1",
     "pydantic>=2.10.6",
     "requests>=2.32.3",
     "selectolax>=0.3.27",
+    "tqdm>=4.67.1",
+    "dlt[duckdb]~=0.4",
 ]
 
 [dependency-groups]

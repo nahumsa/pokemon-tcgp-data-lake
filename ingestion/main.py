@@ -1,6 +1,9 @@
 import re
 import requests
+import concurrent.futures
 from typing import Optional
+import dlt
+from tqdm import tqdm
 from selectolax.parser import HTMLParser
 
 from payload import (
@@ -13,6 +16,79 @@ from payload import (
 )
 from constants import BASE_URL, REGEX_CARD_PATTERN
 from models import Deck, Participant, Tournament, Card
+
+
+@dlt.resource(write_disposition="append")
+def get_tournaments(tournament_params: TournamentPayload):
+    has_data = True
+    while has_data:
+        response = requests.get(
+            BASE_URL + "/tournaments/completed", params=tournament_params
+        )
+
+        tournaments_list = extract_tournaments(response)
+        yield tournaments_list
+
+        if len(tournaments_list) < tournament_params.show:
+            has_data = False
+            print("end scraping tournaments")
+            break
+
+        tournament_params.increment_page()
+
+
+@dlt.resource(write_disposition="append")
+def get_participants_dlt(tournaments: dlt.sources.DltResource):
+    all_tournaments = list(tournaments)
+    all_participants = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        future_to_tournament = {
+            executor.submit(extract_participants, t.tournament_page): t
+            for t in all_tournaments
+        }
+        progress = tqdm(
+            concurrent.futures.as_completed(future_to_tournament),
+            total=len(all_tournaments),
+            desc="Extracting participants",
+        )
+
+        for future in progress:
+            tournament = future_to_tournament[future]
+            try:
+                participants = future.result()
+                all_participants.extend(participants)
+
+            except Exception as exc:
+                print(
+                    f"{getattr(tournament, 'data_label', 'A tournament')!r} generated an exception during participant extraction: {exc}"
+                )
+    yield all_participants
+
+
+@dlt.resource(write_disposition="append")
+def get_decks_dlt(participants: dlt.sources.DltResource):
+    all_participants = list(participants)
+    all_decks = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        future_to_participant = {
+            executor.submit(get_deck, p): p for p in all_participants
+        }
+        progress = tqdm(
+            concurrent.futures.as_completed(future_to_participant),
+            total=len(all_participants),
+            desc="Extracting decklists",
+        )
+        for future in progress:
+            participant = future_to_participant[future]
+            try:
+                deck = future.result()
+                all_decks.append(deck)
+
+            except Exception as exc:
+                print(
+                    f"Participant {participant.name!r} generated an exception during decklist extraction: {exc}"
+                )
+    yield all_decks
 
 
 def extract_tournaments(response: requests.Response) -> list[Tournament]:
@@ -33,26 +109,6 @@ def extract_tournaments(response: requests.Response) -> list[Tournament]:
         )
 
     return tournament_list
-
-
-def get_tournaments(tournament_params: TournamentPayload) -> list[Tournament]:
-    has_data = True
-    all_tournaments = []
-    while has_data:
-        response = requests.get(
-            BASE_URL + "/tournaments/completed", params=tournament_params
-        )
-
-        tournaments_list = extract_tournaments(response)
-        all_tournaments.extend(tournaments_list)
-
-        if len(tournaments_list) < tournament_params.show:
-            has_data = False
-            break
-
-        tournament_params.increment_page()
-
-    return all_tournaments
 
 
 def extract_participants(link: Optional[str]) -> list[Participant]:
@@ -108,25 +164,40 @@ def extract_decklist(link: Optional[str]) -> list[Card]:
     return decklist
 
 
+def get_deck(participant: Participant) -> Deck:
+    """Fetches a decklist for a participant and constructs a Deck object."""
+    decklist = extract_decklist(participant.decklist_link)
+    return Deck(
+        player=participant.name,
+        tournament=participant.tournament_link,
+        decklist=decklist,
+        decklist_link=participant.decklist_link,
+    )
+
+
 if __name__ == "__main__":
     payload = TournamentPayload(
-        game=GameEnum.POCKET,
+        game=GameEnum.TCG,
         format=FormatEnum.STANDARD,
         platform=PlatformEnum.ALL,
         type=TypeEnum.ONLINE,
-        time=TimeEnum.PAST_FOUR_WEEKS,
+        time=TimeEnum.PAST_SEVEN_DAYS,
     )
 
-    all_tournaments = get_tournaments(payload)
-    for tournament in all_tournaments:
-        participants = extract_participants(tournament.tournament_page)
+    pipeline = dlt.pipeline(
+        pipeline_name="pokemon_tcgp_pipeline",
+        destination="duckdb",
+        dataset_name="pokemon_tcgp_data",
+        full_refresh=False,
+    )
 
-        all_decks = [
-            Deck(
-                player=part.name,
-                tournament=part.tournament_link,
-                decklist=extract_decklist(part.decklist_link),
-                decklist_link=part.decklist_link,
-            )
-            for part in participants
-        ]
+    tournaments = get_tournaments(payload)
+    participants = get_participants_dlt(tournaments)
+    decks = get_decks_dlt(participants)
+
+    load_info = pipeline.run(
+        [tournaments, participants, decks],
+        write_disposition="append",
+        loader_file_format="jsonl",
+    )
+    print(load_info)
