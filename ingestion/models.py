@@ -1,7 +1,7 @@
 from typing import Annotated, Any, Optional
 from pydantic import BaseModel, Field, BeforeValidator, computed_field
 
-from constants import BASE_URL
+from .constants import BASE_URL
 
 TextExtractorValidator = Annotated[Any, BeforeValidator(lambda x: x.text())]
 
@@ -20,6 +20,14 @@ class Participant(BaseModel):
     def decklist_link(self) -> Optional[str]:
         if self.raw_decklist:
             return BASE_URL + self.raw_decklist.css_first("a").attributes.get("href")
+
+    @computed_field
+    @property
+    def matches(self) -> Optional[str]:
+        if self.raw_decklist:
+            return BASE_URL + self.raw_decklist.css_first("a").attributes.get(
+                "href"
+            ).replace("/decklist", "")
 
 
 class Tournament(BaseModel):
