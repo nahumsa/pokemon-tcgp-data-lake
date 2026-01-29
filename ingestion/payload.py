@@ -30,7 +30,7 @@ class TournamentPayload(BaseModel):
     format: FormatEnum
     platform: PlatformEnum
     type: TypeEnum
-    time: TimeEnum
+    time: TimeEnum | str
     show: int = 100
     page: int = 1
 

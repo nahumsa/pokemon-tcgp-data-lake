@@ -19,8 +19,8 @@ from .extractors import (
 )
 
 
-@dlt.resource(write_disposition="append")
-def get_tournaments(tournament_params: TournamentPayload):
+@dlt.resource(table_name="tournaments", write_disposition="append")
+def tournaments(tournament_params: TournamentPayload):
     has_data = True
     while has_data:
         response = requests.get(
@@ -38,58 +38,39 @@ def get_tournaments(tournament_params: TournamentPayload):
         tournament_params.increment_page()
 
 
-@dlt.resource(write_disposition="append")
-def get_participants_dlt(tournaments: dlt.sources.DltResource):
-    all_tournaments = list(tournaments)
-    all_participants = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        future_to_tournament = {
-            executor.submit(extract_participants, t.tournament_page): t
-            for t in all_tournaments
-        }
-        progress = tqdm(
-            concurrent.futures.as_completed(future_to_tournament),
-            total=len(all_tournaments),
-            desc="Extracting participants",
-        )
+@dlt.transformer(data_from=tournaments, table_name="tournament_participants")
+def participants(tournaments: dlt.sources.DltResource):
+    @dlt.defer
+    def _get_participants(_tournaments_url):
+        return extract_participants(_tournaments_url)
 
-        for future in progress:
-            tournament = future_to_tournament[future]
-            try:
-                participants = future.result()
-                all_participants.extend(participants)
+    for t in tournaments:
+        try:
+            yield _get_participants(t.tournament_page)
 
-            except Exception as exc:
-                print(
-                    f"{getattr(tournament, 'data_label', 'A tournament')!r} generated an exception during participant extraction: {exc}"
-                )
-    yield all_participants
+        except Exception as exc:
+            print(
+                f"Tournament {t.tournament_page!r} generated an exception during participant extraction: {exc}"
+            )
 
 
-@dlt.resource(write_disposition="append")
-def get_decks_dlt(participants: dlt.sources.DltResource):
-    all_participants = list(participants)
-    all_decks = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        future_to_participant = {
-            executor.submit(get_deck, p): p for p in all_participants
-        }
-        progress = tqdm(
-            concurrent.futures.as_completed(future_to_participant),
-            total=len(all_participants),
-            desc="Extracting decklists",
-        )
-        for future in progress:
-            participant = future_to_participant[future]
-            try:
-                deck = future.result()
-                all_decks.append(deck)
+@dlt.transformer(
+    data_from=participants, table_name="participant_deck", parallelized=True
+)
+def decks(participants: dlt.sources.DltResource):
 
-            except Exception as exc:
-                print(
-                    f"Participant {participant.name!r} generated an exception during decklist extraction: {exc}"
-                )
-    yield all_decks
+    @dlt.defer
+    def _get_decks(_participant):
+        return get_deck(_participant)
+
+    for p in participants:
+        try:
+            yield _get_decks(p)
+
+        except Exception as exc:
+            print(
+                f"Participant {p.name!r} generated an exception during decklist extraction: {exc}"
+            )
 
 
 if __name__ == "__main__":
@@ -107,12 +88,10 @@ if __name__ == "__main__":
         dataset_name="pokemon_tcgp_data",
     )
 
-    tournaments = get_tournaments(payload)
-    participants = get_participants_dlt(tournaments)
-    decks = get_decks_dlt(participants)
+    tournaments_rsc = tournaments(payload)
 
     load_info = pipeline.run(
-        [decks],
+        tournaments_rsc | participants() | decks(),
         write_disposition="append",
         loader_file_format="jsonl",
     )
