@@ -12,6 +12,7 @@ dependencies = [
     "selectolax>=0.3.27",
     "tqdm>=4.67.1",
     "dlt[duckdb]~=0.4",
+    "dbt-duckdb>=1.8.0",
 ]
 
 [dependency-groups]

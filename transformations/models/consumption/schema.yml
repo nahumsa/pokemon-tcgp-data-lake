@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: mart_cards_used
+    description: Analysis of cards used in decks.
+    columns:
+      - name: card_name
+        tests:
+          - not_null
+      - name: total_used
+        tests:
+          - not_null
+
+  - name: mart_tournament_analysis
+    description: Analysis of tournaments.
+    columns:
+      - name: tournament_id
+        tests:
+          - unique
+          - not_null
+
+  - name: mart_deck_analysis
+    description: Analysis of player/deck performance.
+    columns:
+      - name: player_name
+        tests:
+          - not_null
+      - name: win_rate
+        tests:
+          - not_null

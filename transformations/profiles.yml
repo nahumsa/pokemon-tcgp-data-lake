@@ -1,0 +1,9 @@
+pokemon_tcg_transform:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "../pokemon_tcgp_pipeline.duckdb"
+      extensions:
+        - httpfs
+        - parquet

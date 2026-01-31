@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: pokemon_tcg
+    schema: pokemon_tcgp_data
+    tables:
+      - name: tournaments
+      - name: participant_deck
+      - name: participant_deck__decklist
+      - name: participant_matches

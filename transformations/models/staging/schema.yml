@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: stg_tournaments
+    description: Staged tournament data.
+    columns:
+      - name: tournament_id
+        tests:
+          - unique
+          - not_null
+      - name: tournament_url
+        tests:
+          - not_null
+
+  - name: stg_participants
+    description: Staged participant data (players in tournaments).
+    columns:
+      - name: participant_id
+        tests:
+          - unique
+          - not_null
+      - name: tournament_id
+        tests:
+          - not_null
+
+  - name: stg_deck_cards
+    description: Staged deck cards (cards within a participant's deck).
+    columns:
+      - name: card_entry_id
+        tests:
+          - unique
+          - not_null
+      - name: source_participant_id
+        tests:
+          - not_null
+
+  - name: stg_matches
+    description: Staged match data.
+    columns:
+      - name: match_id
+        tests:
+          - unique
+          - not_null
+      - name: participant_id
+        tests:
+          - not_null
