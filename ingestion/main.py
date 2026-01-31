@@ -1,3 +1,8 @@
+import warnings
+
+# Suppress the pkg_resources deprecation warning from dlt
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API")
+
 import requests
 import concurrent.futures
 import dlt
@@ -11,8 +16,9 @@ from .payload import (
     TournamentPayload,
     TypeEnum,
 )
-from .constants import BASE_URL
+from .constants import BASE_URL, HEADERS
 from .extractors import (
+    extract_matches,
     extract_participants,
     extract_tournaments,
     get_deck,
@@ -24,7 +30,7 @@ def tournaments(tournament_params: TournamentPayload):
     has_data = True
     while has_data:
         response = requests.get(
-            BASE_URL + "/tournaments/completed", params=tournament_params
+            BASE_URL + "/tournaments/completed", params=tournament_params, headers=HEADERS
         )
 
         tournaments_list = extract_tournaments(response)
@@ -73,6 +79,24 @@ def decks(participants: dlt.sources.DltResource):
             )
 
 
+@dlt.transformer(
+    data_from=participants, table_name="participant_matches", parallelized=True
+)
+def matches(participants: dlt.sources.DltResource):
+    @dlt.defer
+    def _get_matches(_participant):
+        return extract_matches(_participant)
+
+    for p in participants:
+        try:
+            yield _get_matches(p)
+
+        except Exception as exc:
+            print(
+                f"Participant {p.name!r} generated an exception during matches extraction: {exc}"
+            )
+
+
 if __name__ == "__main__":
     payload = TournamentPayload(
         game=GameEnum.TCG,
@@ -89,9 +113,10 @@ if __name__ == "__main__":
     )
 
     tournaments_rsc = tournaments(payload)
+    participants_rsc = tournaments_rsc | participants()
 
     load_info = pipeline.run(
-        tournaments_rsc | participants() | decks(),
+        [participants_rsc | decks(), participants_rsc | matches()],
         write_disposition="append",
         loader_file_format="jsonl",
     )

@@ -3,7 +3,9 @@ from pydantic import BaseModel, Field, BeforeValidator, computed_field
 
 from .constants import BASE_URL
 
-TextExtractorValidator = Annotated[Any, BeforeValidator(lambda x: x.text())]
+TextExtractorValidator = Annotated[
+    Any, BeforeValidator(lambda x: x.text() if hasattr(x, "text") else str(x))
+]
 
 
 class Participant(BaseModel):
@@ -56,3 +58,11 @@ class Deck(BaseModel):
     tournament: str
     decklist: list[Card]
     decklist_link: Optional[str]
+
+
+class Match(BaseModel):
+    round: Annotated[TextExtractorValidator, Field(alias="Round")]
+    player1: Annotated[TextExtractorValidator, Field(alias="P1")]
+    player2: Annotated[TextExtractorValidator, Field(alias="P2")]
+    result: Annotated[TextExtractorValidator, Field(alias="Result")]
+    tournament: str

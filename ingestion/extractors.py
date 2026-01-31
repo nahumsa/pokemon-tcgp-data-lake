@@ -3,8 +3,8 @@ import requests
 from typing import Optional
 from selectolax.parser import HTMLParser
 
-from .constants import BASE_URL, REGEX_CARD_PATTERN
-from .models import Deck, Participant, Tournament, Card
+from .constants import BASE_URL, REGEX_CARD_PATTERN, HEADERS
+from .models import Deck, Participant, Tournament, Card, Match
 
 
 def extract_tournaments(response: requests.Response) -> list[Tournament]:
@@ -31,7 +31,7 @@ def extract_participants(link: Optional[str]) -> list[Participant]:
     if not link:
         raise ValueError("tournament link not provided")
 
-    response = requests.get(link)
+    response = requests.get(link, headers=HEADERS)
     tree = HTMLParser(response.text)
     header_element = tree.css_first(
         "body > div.main > div > div.standings.completed > table > tbody > tr:nth-child(1)"
@@ -69,7 +69,7 @@ def extract_decklist(link: Optional[str]) -> list[Card]:
     if not link:
         raise ValueError("decklist link not provided")
 
-    response = requests.get(link)
+    response = requests.get(link, headers=HEADERS)
     tree = HTMLParser(response.text)
     card_container_list = tree.css(".cards")
 
@@ -80,8 +80,11 @@ def extract_decklist(link: Optional[str]) -> list[Card]:
     return decklist
 
 
-def get_deck(participant: Participant) -> Deck:
+def get_deck(participant: Participant) -> Optional[Deck]:
     """Fetches a decklist for a participant and constructs a Deck object."""
+    if not participant.decklist_link:
+        return None
+
     decklist = extract_decklist(participant.decklist_link)
     return Deck(
         player=participant.name,
@@ -89,3 +92,45 @@ def get_deck(participant: Participant) -> Deck:
         decklist=decklist,
         decklist_link=participant.decklist_link,
     )
+
+
+def extract_matches(participant: Participant) -> list[Match]:
+    if not participant.matches:
+        return []
+
+    response = requests.get(participant.matches, headers=HEADERS)
+    tree = HTMLParser(response.text)
+
+    # Use the 'history' class to find the table as seen in the HTML snippet
+    table = tree.css_first("div.history table")
+    if not table:
+        return []
+
+    rows = table.css("tr")
+    # Skip header row
+    data_rows = rows[1:]
+
+    matches = []
+    for row in data_rows:
+        cols = row.css("td")
+        if len(cols) < 5:
+            continue
+
+        # Column mapping based on HTML:
+        # 0: Round
+        # 1: Result (WIN/LOSS/TIE)
+        # 2: Opponent (P2)
+        # 3: Opponent Deck (ignored)
+        # 4: Opponent Score (ignored)
+
+        matches.append(
+            Match(
+                tournament=participant.tournament_link,
+                Round=cols[0],
+                Result=cols[1],
+                P2=cols[2],
+                P1=participant.name,
+            )
+        )
+
+    return matches
