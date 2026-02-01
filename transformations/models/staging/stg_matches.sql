@@ -7,6 +7,7 @@ renamed as (
         {{ dbt_utils.generate_surrogate_key(['tournament', 'p1', 'round']) }} as match_id,
         {{ dbt_utils.generate_surrogate_key(['tournament']) }} as tournament_id,
         {{ dbt_utils.generate_surrogate_key(['p1', 'tournament']) }} as participant_id,
+        {{ dbt_utils.generate_surrogate_key(['p2', 'tournament']) }} as opponent_id,
         tournament as tournament_url,
         round,
         p1 as player_name,
