@@ -1,30 +1,69 @@
 version: 2
 
 models:
+  - name: mart_archetype_stats
+    description: "Overall performance statistics aggregated by deck archetype and sub-archetype."
+    columns:
+      - name: archetype
+        description: "Primary deck archetype."
+        tests:
+          - not_null
+      - name: total_matches
+        description: "Total number of matches played by this archetype."
+      - name: wins
+        description: "Total wins."
+      - name: win_rate
+        description: "Win rate percentage (0-100)."
+
+  - name: mart_archetype_matchups
+    description: "Head-to-head performance matrix between different archetypes."
+    columns:
+      - name: p1_archetype
+        description: "Archetype of the primary player."
+        tests:
+          - not_null
+      - name: p2_archetype
+        description: "Archetype of the opponent."
+        tests:
+          - not_null
+      - name: total_matches
+        description: "Number of matches recorded for this specific matchup."
+      - name: win_rate
+        description: "Win rate of Player 1 against Player 2."
+
   - name: mart_cards_used
-    description: Analysis of cards used in decks.
+    description: "Aggregation of card usage across all tournament decks."
     columns:
       - name: card_name
+        description: "Name of the card."
         tests:
           - not_null
       - name: total_used
+        description: "Cumulative count of this card across all decks."
+      - name: decks_containing
+        description: "Number of unique decks that included at least one copy of this card."
+
+  - name: mart_deck_analysis
+    description: "Detailed performance analysis for each participant and their deck."
+    columns:
+      - name: player_name
+        description: "Name of the player."
         tests:
           - not_null
+      - name: tournament_url
+        description: "Link to the tournament standings."
+      - name: win_rate
+        description: "Percentage of matches won by this player in the tournament."
 
   - name: mart_tournament_analysis
-    description: Analysis of tournaments.
+    description: "Summary statistics for tournaments, including player counts and match activity."
     columns:
       - name: tournament_id
+        description: "Unique identifier for the tournament."
         tests:
           - unique
           - not_null
-
-  - name: mart_deck_analysis
-    description: Analysis of player/deck performance.
-    columns:
-      - name: player_name
-        tests:
-          - not_null
-      - name: win_rate
-        tests:
-          - not_null
+      - name: tournament_name
+        description: "Official name of the tournament."
+      - name: player_count
+        description: "Total number of participants recorded."
