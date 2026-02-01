@@ -1,0 +1,139 @@
+version: 2
+
+models:
+  - name: dim_cards
+    description: "Dimension table containing unique card information extracted from decklists."
+    columns:
+      - name: card_id
+        description: "Unique surrogate key for the card."
+        tests:
+          - unique
+          - not_null
+      - name: card_name
+        description: "Name of the card."
+        tests:
+          - not_null
+      - name: card_code
+        description: "Set code and number of the card (e.g., SVI-001)."
+      - name: card_kind
+        description: "Type of card (pokemon, trainer, energy)."
+        tests:
+          - accepted_values:
+              values: ["pokemon", "trainer", "energy"]
+
+  - name: dim_participants
+    description: "Dimension table containing tournament participants."
+    columns:
+      - name: participant_id
+        description: "Unique surrogate key for the participant."
+        tests:
+          - unique
+          - not_null
+      - name: tournament_id
+        description: "Foreign key linking to the tournament."
+        tests:
+          - relationships:
+              to: ref('dim_tournaments')
+              field: tournament_id
+              config:
+                severity: warn
+      - name: player_name
+        description: "Name of the player."
+        tests:
+          - not_null
+      - name: tournament_url
+        description: "URL of the tournament standings page."
+      - name: decklist_link
+        description: "URL to the player's specific decklist."
+
+  - name: dim_tournaments
+    description: "Dimension table containing tournament details."
+    columns:
+      - name: tournament_id
+        description: "Unique surrogate key for the tournament."
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Name of the tournament."
+      - name: date
+        description: "Date when the tournament was held."
+      - name: format
+        description: "Tournament format (e.g., Standard)."
+      - name: players
+        description: "Number of players in the tournament."
+      - name: winner
+        description: "Name of the tournament winner."
+
+  - name: dim_deck_archetypes
+    description: "Classified archetypes for participant decks based on key cards."
+    columns:
+      - name: participant_id
+        description: "Unique surrogate key for the participant."
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('dim_participants')
+              field: participant_id
+      - name: archetype
+        description: "Primary archetype of the deck (e.g., Dragapult, Charizard)."
+        tests:
+          - not_null
+      - name: sub_archetype
+        description: "Specific variant of the archetype (e.g., Dragapult Dusknoir)."
+        tests:
+          - not_null
+
+  - name: fct_deck_composition
+    description: "Fact table detailing the cards included in each participant's deck."
+    columns:
+      - name: participant_id
+        description: "Foreign key to the participant."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_participants')
+              field: participant_id
+      - name: card_name
+        description: "Name of the card included."
+        tests:
+          - not_null
+      - name: quantity
+        description: "Number of copies of the card in the deck."
+        tests:
+          - not_null
+
+  - name: fct_matches
+    description: "Fact table recording match results for participants."
+    columns:
+      - name: match_id
+        description: "Unique surrogate key for the match."
+        tests:
+          - unique
+          - not_null
+      - name: participant_id
+        description: "Foreign key to the participant (Player 1)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_participants')
+              field: participant_id
+      - name: tournament_id
+        description: "Foreign key to the tournament."
+        tests:
+          - relationships:
+              to: ref('dim_tournaments')
+              field: tournament_id
+              config:
+                severity: warn
+      - name: round
+        description: "Round number of the match."
+      - name: opponent_name
+        description: "Name of the opponent."
+      - name: result
+        description: "Outcome of the match for the participant."
+        tests:
+          - accepted_values:
+              values: ["WIN", "LOSS", "TIE"]
+
