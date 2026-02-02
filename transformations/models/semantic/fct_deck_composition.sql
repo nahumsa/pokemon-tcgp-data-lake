@@ -16,5 +16,5 @@ select
     c.card_code,
     c.quantity,
     c.card_kind
-from cards c
-left join participants p on c.source_participant_id = p.source_id
+from cards as c
+left join participants as p on c.source_participant_id = p.source_id

@@ -1,0 +1,37 @@
+[sqlfluff]
+dialect = duckdb
+templater = dbt
+runaway_limit = 10
+max_line_length = 120
+indent_unit = space
+
+[sqlfluff:templater:dbt]
+project_dir = .
+profiles_dir = .
+profile = pokemon_tcg_transform
+target = dev
+
+[sqlfluff:indentation]
+tab_space_size = 4
+
+[sqlfluff:layout:type:comma]
+spacing_before = touch
+line_position = trailing
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.identifiers]
+capitalisation_policy = lower
+
+[sqlfluff:rules:references.keywords]
+ignore_words = ties,format
+
+[sqlfluff:rules:capitalisation.functions]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.types]
+capitalisation_policy = lower

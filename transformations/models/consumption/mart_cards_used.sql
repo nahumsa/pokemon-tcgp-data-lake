@@ -4,5 +4,7 @@ select
     sum(quantity) as total_used,
     count(distinct participant_id) as decks_containing
 from {{ ref('fct_deck_composition') }}
-group by 1, 2
+group by
+    card_name,
+    card_code
 order by total_used desc

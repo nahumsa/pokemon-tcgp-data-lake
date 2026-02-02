@@ -11,8 +11,7 @@ parents as (
 ),
 
 deduplicated_parents as (
-    select
-        _dlt_id
+    select _dlt_id
     from parents
     qualify row_number() over (partition by participant_id order by _dlt_load_id desc) = 1
 ),
@@ -24,8 +23,8 @@ joined as (
         c.code as card_code,
         c.quantity,
         c.kind as card_kind
-    from cards c
-    inner join deduplicated_parents p on c._dlt_parent_id = p._dlt_id
+    from cards as c
+    inner join deduplicated_parents as p on c._dlt_parent_id = p._dlt_id
 )
 
 select

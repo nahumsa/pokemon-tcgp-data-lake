@@ -13,5 +13,5 @@ matches as (
 select
     t.*,
     coalesce(m.total_matches, 0) as total_matches
-from tournaments t
-left join matches m on t.tournament_id = m.tournament_id
+from tournaments as t
+left join matches as m on t.tournament_id = m.tournament_id

@@ -6,7 +6,7 @@ with matches as (
         sum(case when result = 'LOSS' then 1 else 0 end) as losses,
         sum(case when result = 'TIE' then 1 else 0 end) as ties
     from {{ ref('fct_matches') }}
-    group by 1
+    group by participant_id
 ),
 
 participants as (
@@ -21,6 +21,6 @@ select
     m.losses,
     m.ties,
     case when m.total_matches > 0 then m.wins::double / m.total_matches else 0 end as win_rate
-from participants p
-left join matches m on p.participant_id = m.participant_id
+from participants as p
+left join matches as m on p.participant_id = m.participant_id
 order by win_rate desc
