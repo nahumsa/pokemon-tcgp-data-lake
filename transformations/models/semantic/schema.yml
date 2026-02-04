@@ -137,3 +137,24 @@ models:
           - accepted_values:
               values: ["WIN", "LOSS", "TIE"]
 
+  - name: dim_pokemon_sets
+    description: "Dimension table containing Pokémon TCG expansion sets and their legality dates."
+    columns:
+      - name: set_name
+        description: "Full name of the expansion set."
+        tests:
+          - not_null
+      - name: set_abbreviation
+        description: "Standard abbreviation code for the set (e.g., SVI)."
+        tests:
+          - unique
+          - not_null
+      - name: release_date
+        description: "Official release date of the set."
+        tests:
+          - not_null
+      - name: legal_start_date
+        description: "Date when the set becomes legal for tournament play (Release Date - 1 day)."
+        tests:
+          - not_null
+
