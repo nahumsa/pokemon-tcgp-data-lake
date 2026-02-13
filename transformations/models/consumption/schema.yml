@@ -67,3 +67,53 @@ models:
         description: "Official name of the tournament."
       - name: player_count
         description: "Total number of participants recorded."
+
+  - name: mart_monthly_meta_shifts
+    description: "Monthly aggregation of deck archetype popularity and performance."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - tournament_month
+            - archetype
+    columns:
+      - name: tournament_month
+        description: "The month of the tournaments."
+        tests:
+          - not_null
+      - name: archetype
+        description: "Deck archetype."
+        tests:
+          - not_null
+      - name: meta_share
+        description: "Percentage of participants using this archetype in the given month."
+
+  - name: mart_archetype_card_staples
+    description: "Analysis of card inclusion rates and average quantities within each deck archetype."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - archetype
+            - card_name
+            - card_code
+    columns:
+      - name: archetype
+        description: "Deck archetype."
+        tests:
+          - not_null
+      - name: card_name
+        description: "Name of the card."
+        tests:
+          - not_null
+      - name: inclusion_rate
+        description: "Percentage of decks in this archetype that include the card."
+
+  - name: mart_player_lifetime_stats
+    description: "Aggregated lifetime performance and favorite archetypes for all players."
+    columns:
+      - name: player_name
+        description: "Name of the player."
+        tests:
+          - not_null
+          - unique
+      - name: win_rate
+        description: "Overall win rate across all matches."

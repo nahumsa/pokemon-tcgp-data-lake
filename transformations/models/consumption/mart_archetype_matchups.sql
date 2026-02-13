@@ -59,12 +59,15 @@ select
     sum(case when result = 'WIN' then 1 else 0 end) as wins,
     sum(case when result = 'LOSS' then 1 else 0 end) as losses,
     sum(case when result = 'TIE' then 1 else 0 end) as ties,
-    round(sum(case when result = 'WIN' then 1 case when result = 'TIE' then 1 else 0 end) * 100.0 / count(*), 2) as win_ties_rate,
-    round(sum(case when result = 'WIN' then 1 else 0 end) * 100.0 / count(*), 2) as win_no_ties_rate
+    round(
+        sum(case when result = 'WIN' then 1 when result = 'TIE' then 1 else 0 end) * 100.0 / count(*),
+        2
+    ) as win_ties_rate,
+    round(
+        sum(case when result = 'WIN' then 1 else 0 end) * 100.0 / count(*),
+        2
+    ) as win_no_ties_rate
 from matches_with_archetypes
 group by
-    set_name,
-    p1_archetype,
-    p1_sub_archetype,
-    p2_archetype,
-    p2_sub_archetype
+    1, 2, 3, 4, 5
+order by 1, 2, 4
