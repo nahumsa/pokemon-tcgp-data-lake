@@ -153,8 +153,7 @@ models:
         description: "Official release date of the set."
         tests:
           - not_null
-      - name: legal_start_date
-        description: "Date when the set becomes legal for tournament play (Release Date - 1 day)."
+      - name: online_start_date
+        description: "Date when the set becomes legal for online tournament play (Release Date - 1 day)."
         tests:
           - not_null
-
