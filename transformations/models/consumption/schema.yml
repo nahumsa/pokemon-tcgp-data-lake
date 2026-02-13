@@ -117,3 +117,35 @@ models:
           - unique
       - name: win_rate
         description: "Overall win rate across all matches."
+
+  - name: mart_archetype_matchup_suggestions
+    description: "Data-driven card suggestions to improve an archetype's performance against difficult opponents, including quantity analysis and significance filtering."
+    columns:
+      - name: set_name
+        description: "The name of the set or meta period."
+        tests:
+          - not_null
+      - name: archetype
+        description: "The archetype for which suggestions are provided."
+        tests:
+          - not_null
+      - name: opponent_archetype
+        description: "The difficult opponent archetype."
+        tests:
+          - not_null
+      - name: suggested_card
+        description: "The card suggested to improve the matchup."
+        tests:
+          - not_null
+      - name: card_kind
+        description: "Type of card (Pokemon, Trainer, Energy)."
+      - name: sample_size
+        description: "Number of matches in this matchup where the archetype included the card."
+      - name: win_rate_with_card
+        description: "Win rate of the archetype against the opponent when the suggested card is included."
+      - name: win_rate_without_card
+        description: "Win rate of the archetype against the opponent when the suggested card is NOT included."
+      - name: relevance_score
+        description: "Difference between win rate with and without the card."
+      - name: suggested_quantity
+        description: "Average quantity of the card found in winning decks for this matchup."

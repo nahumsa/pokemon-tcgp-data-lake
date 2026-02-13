@@ -3,7 +3,7 @@ log_level="WARNING"
 
 [extract]
 # use 2 workers to extract sources in parallel
-workers=8
+workers=4
 # allow 10 async items to be processed in parallel
 max_parallel_items=10
 
