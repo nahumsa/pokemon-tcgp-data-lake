@@ -1,0 +1,16 @@
+[project]
+name = "pokemon-tcgp-ingestion"
+version = "0.1.0"
+description = "Data ingestion pipeline for Pokemon TCGP"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic-settings>=2.8.1",
+    "pydantic>=2.10.6",
+    "requests>=2.32.3",
+    "selectolax>=0.3.27",
+    "tqdm>=4.67.1",
+    "dlt[duckdb]~=0.4",
+]
+
+[tool.setuptools]
+packages = ["ingestion"]

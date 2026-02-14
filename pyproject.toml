@@ -1,23 +1,22 @@
 [project]
-name = "pokemon-tcgp-data-lake"
+name = "pokemon-tcgp-data-lake-workspace"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "Monorepo for Pokemon TCG Data Lake"
 requires-python = ">=3.12"
-dependencies = [
-    "pyarrow>=19.0.1",
-    "pydantic-settings>=2.8.1",
-    "pydantic>=2.10.6",
-    "requests>=2.32.3",
-    "selectolax>=0.3.27",
-    "tqdm>=4.67.1",
-    "dlt[duckdb]~=0.4",
-    "dbt-duckdb>=1.8.0",
-]
+dependencies = []
+
+[tool.uv]
+workspace = { members = ["ingestion", "semantic_layer", "pokemon_cli", "transformations"] }
 
 [dependency-groups]
 dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
     "ruff>=0.9.10",
     "sqlfluff>=3.3.0",
     "sqlfluff-templater-dbt>=3.3.0",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_mode = "auto"

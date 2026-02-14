@@ -1,0 +1,37 @@
+services:
+  # Ingestion Service: Scrapes/Loads data into DuckDB
+  ingestion:
+    build:
+      context: .
+      dockerfile: ingestion/Dockerfile
+    volumes:
+      - ./pokemon_tcgp_pipeline.duckdb:/app/pokemon_tcgp_pipeline.duckdb
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+
+  # Transformation Service: Runs dbt models
+  transformations:
+    build:
+      context: .
+      dockerfile: transformations/Dockerfile
+    volumes:
+      - ./pokemon_tcgp_pipeline.duckdb:/app/pokemon_tcgp_pipeline.duckdb
+      - ./transformations:/app/transformations
+    working_dir: /app/transformations
+    command: run --profiles-dir .
+    depends_on:
+      ingestion:
+        condition: service_completed_successfully
+
+  # CLI Chat: Interactive Chat Interface
+  # Usage: docker compose run --rm cli-chat
+  cli-chat:
+    build:
+      context: .
+      dockerfile: pokemon_cli/Dockerfile
+    volumes:
+      - ./pokemon_tcgp_pipeline.duckdb:/app/pokemon_tcgp_pipeline.duckdb
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    stdin_open: true
+    tty: true

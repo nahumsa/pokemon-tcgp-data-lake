@@ -1,0 +1,10 @@
+.git
+.venv
+__pycache__
+*.pyc
+.DS_Store
+.dlt/
+.gemini/
+target/
+dbt_packages/
+logs/

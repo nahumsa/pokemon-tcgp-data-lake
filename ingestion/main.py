@@ -1,14 +1,18 @@
-from typing import Optional
-import warnings
 import argparse
+import warnings
 from datetime import datetime
+from typing import Optional
 
-# Suppress the pkg_resources deprecation warning from dlt
-warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API")
-
-import requests
 import dlt
+import requests
 
+from .constants import BASE_URL, HEADERS
+from .extractors import (
+    extract_matches,
+    extract_participants,
+    extract_tournaments,
+    get_deck,
+)
 from .payload import (
     FormatEnum,
     GameEnum,
@@ -17,13 +21,9 @@ from .payload import (
     TournamentPayload,
     TypeEnum,
 )
-from .constants import BASE_URL, HEADERS
-from .extractors import (
-    extract_matches,
-    extract_participants,
-    extract_tournaments,
-    get_deck,
-)
+
+# Suppress the pkg_resources deprecation warning from dlt
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API")
 
 
 @dlt.resource(
