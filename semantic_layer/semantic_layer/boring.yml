@@ -1,0 +1,105 @@
+archetype_stats:
+  table: mart_archetype_stats
+  database: main_consumption
+  description: "Performance statistics aggregated by deck archetype. Use this to find top meta decks."
+  dimensions:
+    set_name:
+      expr: _.set_name
+      description: "The name of the card set or meta period (e.g. 'Genetic Apex')."
+    archetype:
+      expr: _.archetype
+      description: "The name of the deck archetype (e.g. 'Charizard', 'Mewtwo')."
+    sub_archetype:
+      expr: _.sub_archetype
+      description: "A more specific variant of the archetype."
+  measures:
+    total_matches:
+      expr: _.total_matches.sum()
+      description: "Total number of matches played by this archetype."
+    total_wins:
+      expr: _.wins.sum()
+      description: "Total number of wins."
+    avg_win_rate:
+      expr: _.win_rate.mean()
+      description: "Average win rate percentage (0-100)."
+
+cards:
+  table: dim_cards
+  database: main_semantic
+  description: "Dimension table containing unique card information."
+  dimensions:
+    card_id:
+      expr: _.card_id
+      description: "Unique identifier for the card."
+    card_name:
+      expr: _.card_name
+      description: "Name of the card."
+    card_code:
+      expr: _.card_code
+      description: "Set code and number (e.g. 'SVI-001')."
+    card_kind:
+      expr: _.card_kind
+      description: "Type of card: 'pokemon', 'trainer', or 'energy'."
+
+matches:
+  table: fct_matches
+  database: main_semantic
+  description: "Granular match results for individual participants."
+  dimensions:
+    match_id:
+      expr: _.match_id
+      description: "Unique identifier for the match."
+    result:
+      expr: _.result
+      description: "Match outcome: 'WIN', 'LOSS', or 'TIE'."
+    opponent_name:
+      expr: _.opponent_name
+      description: "Name of the opponent player."
+    round:
+      expr: _.round
+      description: "Tournament round number."
+  measures:
+    match_count:
+      expr: _.count()
+      description: "Count of matches."
+
+card_staples:
+  table: mart_archetype_card_staples
+  database: main_consumption
+  description: "Analysis of which cards are commonly played in specific archetypes."
+  dimensions:
+    archetype:
+      expr: _.archetype
+      description: "The deck archetype."
+    card_name:
+      expr: _.card_name
+      description: "Name of the card."
+    card_code:
+      expr: _.card_code
+      description: "Set code of the card."
+  measures:
+    avg_inclusion_rate:
+      expr: _.inclusion_rate.mean()
+      description: "Percentage (0-100) of decks of this archetype that include this card. 100 means every deck uses it."
+
+archetype_matchups:
+  table: mart_archetype_matchups
+  database: main_consumption
+  description: "Head-to-head performance matrix. Use this to find counters or checking specific matchups."
+  dimensions:
+    p1_archetype:
+      expr: _.p1_archetype
+      description: "The archetype of the primary player (the one we are checking win rate for)."
+    p2_archetype:
+      expr: _.p2_archetype
+      description: "The archetype of the opponent."
+    set_name:
+      expr: _.set_name
+      description: "The meta period."
+  measures:
+    total_matches:
+      expr: _.total_matches.sum()
+      description: "Number of matches recorded for this specific matchup."
+    win_rate:
+      expr: _.win_ties_rate.mean()
+      description: "Win rate (0-100) of P1 Archetype against P2 Archetype."

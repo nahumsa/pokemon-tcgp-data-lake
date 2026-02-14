@@ -1,0 +1,13 @@
+[project]
+name = "pokemon-tcgp-semantic-layer"
+version = "0.1.0"
+description = "Semantic layer and MCP server for Pokemon TCGP"
+requires-python = ">=3.12"
+dependencies = [
+    "boring-semantic-layer[mcp]>=0.3.7",
+    "mcp>=1.26.0",
+]
+
+[tool.setuptools]
+packages = ["semantic_layer"]
+package-dir = {"" = "."}
