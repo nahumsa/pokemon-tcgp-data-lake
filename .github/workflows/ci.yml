@@ -32,3 +32,9 @@ jobs:
         run: |
           cd transformations
           uv run sqlfluff lint models
+
+      - name: Lint with Ruff
+        run: uv run ruff check .
+
+      - name: Run CLI Tests
+        run: uv run pytest pokemon_cli/tests/
