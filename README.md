@@ -1,60 +1,162 @@
-# Pokemon TCGP Data Lake & Analytics
+# Pokemon TCGP Data Lake & AI Analyst
 
-A data lake and analytics platform for Pokemon TCG and Pokemon TCG Pocket tournaments, built with `dlt`, `dbt`, and `DuckDB`.
+An enterprise-grade data platform for Pokemon TCG Pocket, featuring a component-based monorepo architecture.
+This project implements a full ELT (Extract, Load, Transform) pipeline, a semantic layer via MCP (Model Context Protocol), and an AI-powered Analyst CLI using Google's Gemini.
 
-## Features
+## 🏗 Architecture
 
-- **Automated Ingestion**: Scrapes tournament, participant, decklist, and match data from Limitless TCG.
-- **Robust Transformation**: Multi-layer dbt project for cleaning, modeling, and analyzing data.
-- **DuckDB Powered**: High-performance local analytical database.
-- **UV Managed**: Modern Python package management.
+The system is designed following the principle of **Separation of Concerns** and **Bounded Contexts**:
 
-## Getting Started
+1. **Ingestion (`/ingestion`)**: A `dlt` (Data Load Tool) pipeline that scrapes tournament data and participant decklists, loading them into a DuckDB "Bronze/Silver" layer.
+2. **Transformations (`/transformations`)**: A `dbt` project that models the raw data into a dimensional "Gold" layer (marts) for analysis.
+3. **Semantic Layer (`/semantic_layer`)**: An MCP-compatible server built with `boring-semantic-layer` and `Ibis`. It abstracts complex SQL into semantic entities (Archetypes, Matches, Staples).
+4. **AI Analyst CLI (`/pokemon_cli`)**: A Python CLI using the **Gateway** and **Controller** patterns. It integrates with Gemini to allow natural language querying of the semantic layer.
 
-1.  **Install UV**: Ensure you have [uv](https://github.com/astral-sh/uv) installed.
-2.  **Sync Dependencies**:
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Python 3.12+**
+- **[uv](https://github.com/astral-sh/uv)**: High-performance Python package manager.
+- **Docker & Docker Compose** (optional, for containerized execution).
+- **Gemini API Key**: Obtain from [Google AI Studio](https://aistudio.google.com/).
+
+### Installation
+
+1. **Clone the repository**:
+
+    ```bash
+    git clone <repo-url>
+    cd pokemon-tcgp-data-lake
+    ```
+
+2. **Set Environment Variables**:
+
+    ```bash
+    export GEMINI_API_KEY="your-key-here"
+    ```
+
+3. **Synchronize Workspace**:
+
     ```bash
     uv sync
     ```
 
-## Ingestion Pipeline
+---
 
-The ingestion pipeline is built with `dlt` and fetches data directly into DuckDB.
+## 🛠 Operational Guide
 
-To run the full ingestion:
+### 1. Ingestion (EL)
+
+Extract data from tournament sources and load into DuckDB.
+
 ```bash
-uv run -m ingestion.main
+# Run incremental ingestion (current month)
+uv run --package pokemon-tcgp-ingestion python ingestion/main.py
+
+# Run incremental ingestion (for a specific month)
+uv run --package pokemon-tcgp-ingestion python ingestion/main.py 2026-01
+
+# Run backfill (could take a while)
+uv run --package pokemon-tcgp-ingestion python ingestion/main.py --backfill
 ```
 
-This will populate the `pokemon_tcgp_data` schema in `pokemon_tcgp_pipeline.duckdb`.
+### 2. Transformations (T)
 
-## Transformations (dbt)
+Model the data using `dbt`.
 
-Transfomations are located in the `transformations/` directory and use the `dbt-duckdb` adapter.
-
-### Data Layers
-
-- **Staging**: Proper casting, surrogate key generation, and deduplication (using `qualify row_number()`).
-- **Semantic**: Dimensional modeling with Facts (`fct_matches`, `fct_deck_composition`) and Dimensions (`dim_tournaments`, `dim_participants`, `dim_cards`).
-- **Consumption**: Analytical marts for business-level insights:
-    - `mart_tournament_analysis`: Aggregated tournament metrics.
-    - `mart_deck_analysis`: Player performance and win rate statistics.
-    - `mart_cards_used`: Card frequency and usage analysis across decks.
-
-### Running Transformations
-
-Navigate to the `transformations` directory:
 ```bash
 cd transformations
-uv run dbt run --profiles-dir .
-uv run dbt test --profiles-dir .
+uv run dbt deps
+uv run dbt run
 ```
 
-## Data Exploration
+### 3. AI Analyst Chat (The "UI")
 
-You can query the results directly using the DuckDB CLI (if installed) or via Python:
+Engage with the data using natural language.
 
 ```bash
-# Example: Check top 5 players by win rate
-uv run python -c "import duckdb; print(duckdb.connect('pokemon_tcgp_pipeline.duckdb').sql('SELECT * FROM consumption.mart_deck_analysis LIMIT 5').fetchall())"
+# Run the CLI
+uv run --package pokemon-tcgp-cli python -m pokemon_cli.main
 ```
+
+---
+
+## 📦 Monorepo Workflow
+
+This project uses **uv workspaces** to manage multiple components. When adding dependencies or running commands, you must specify the package name (found in each component's `pyproject.toml`).
+
+### Managing Dependencies
+
+To add a package to a specific component:
+```bash
+# General syntax
+uv add <package-name> --package <internal-package-name>
+
+# Examples
+uv add pandas --package pokemon-tcgp-ingestion
+uv add rich --package pokemon-tcgp-cli
+```
+
+### Running Commands
+
+To run a script or command for a specific component from the root:
+```bash
+uv run --package <internal-package-name> <command>
+```
+
+**Package Reference Table:**
+| Component | Directory | Internal Package Name |
+|-----------|-----------|-----------------------|
+| Ingestion | `ingestion/` | `pokemon-tcgp-ingestion` |
+| Semantic Layer | `semantic_layer/` | `pokemon-tcgp-semantic-layer` |
+| Analyst CLI | `pokemon_cli/` | `pokemon-tcgp-cli` |
+| Transformations | `transformations/` | `pokemon-tcgp-transformations` |
+
+---
+
+## 🐳 Docker Orchestration
+
+The project is fully containerized with optimized multi-stage builds.
+
+```bash
+# Build and run the entire stack
+docker-compose up -d
+
+# Run the interactive CLI via Docker
+docker-compose run cli-chat
+```
+
+---
+
+## 🧪 Quality & Standards
+
+### Linting
+
+We use **Ruff** for high-performance Python linting and formatting, and **SQLFluff** for dbt models.
+
+```bash
+# Lint Python code
+uv run ruff check .
+
+# Lint SQL models
+cd transformations
+uv run sqlfluff lint models
+```
+
+### Testing
+
+Unit tests are co-located within their respective components.
+
+```bash
+# Run CLI unit tests
+uv run pytest pokemon_cli/tests/
+```
+
+### CI/CD
+
+Our GitHub Actions pipeline (`.github/workflows/ci.yml`) automatically runs SQL linting, Python linting, and unit tests on every push to `main`.
+
+---
