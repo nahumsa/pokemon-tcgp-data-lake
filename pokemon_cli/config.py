@@ -17,7 +17,9 @@ class ChatConfig:
     """Enterprise configuration object."""
 
     api_key: str
-    model_name: str = "gemini-flash-2.5"
+    provider: str = "gemini"
+    model_name: str = "gemini-3-flash-preview"
+    ollama_base_url: str = "http://localhost:11434"
     system_prompt: str = (
         "You are an expert Pokemon TCG Analyst. "
         "You have access to a semantic layer via tools that allow you to query tournament data, "
