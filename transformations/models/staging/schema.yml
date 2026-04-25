@@ -11,6 +11,9 @@ models:
       - name: tournament_url
         tests:
           - not_null
+      - name: tournament_date
+        tests:
+          - not_null
 
   - name: stg_participants
     description: Staged participant data (players in tournaments).

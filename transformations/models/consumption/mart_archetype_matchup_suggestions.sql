@@ -30,7 +30,7 @@ archetype_staples as (
 global_staples as (
     select
         card_name,
-        (decks_containing * 100.0 / (select count(distinct participant_id) from archetypes)) as global_inclusion_rate
+        (decks_containing * 100.0 / (select count(distinct participant_id) from archetypes)) as global_inclusion_rate -- noqa
     from {{ ref('mart_cards_used') }}
 ),
 
