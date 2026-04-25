@@ -54,13 +54,13 @@ Extract data from tournament sources and load into DuckDB.
 
 ```bash
 # Run incremental ingestion (current month)
-uv run --package pokemon-tcgp-ingestion python ingestion/main.py
+uv run --package pokemon-tcgp-ingestion python -m ingestion.main
 
 # Run incremental ingestion (for a specific month)
-uv run --package pokemon-tcgp-ingestion python ingestion/main.py 2026-01
+uv run --package pokemon-tcgp-ingestion python -m ingestion.main --month 2026-01
 
 # Run backfill (could take a while)
-uv run --package pokemon-tcgp-ingestion python ingestion/main.py --backfill
+uv run --package pokemon-tcgp-ingestion python -m ingestion.main --backfill
 ```
 
 ### 2. Transformations (T)
@@ -91,6 +91,7 @@ This project uses **uv workspaces** to manage multiple components. When adding d
 ### Managing Dependencies
 
 To add a package to a specific component:
+
 ```bash
 # General syntax
 uv add <package-name> --package <internal-package-name>
@@ -103,11 +104,13 @@ uv add rich --package pokemon-tcgp-cli
 ### Running Commands
 
 To run a script or command for a specific component from the root:
+
 ```bash
 uv run --package <internal-package-name> <command>
 ```
 
 **Package Reference Table:**
+
 | Component | Directory | Internal Package Name |
 |-----------|-----------|-----------------------|
 | Ingestion | `ingestion/` | `pokemon-tcgp-ingestion` |

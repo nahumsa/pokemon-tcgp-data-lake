@@ -3,7 +3,8 @@ import requests
 from typing import Optional
 from selectolax.parser import HTMLParser
 
-from .constants import BASE_URL, REGEX_CARD_PATTERN, HEADERS
+from .constants import BASE_URL, REGEX_CARD_PATTERN
+from .http_client import get
 from .models import Deck, Participant, Tournament, Card, Match
 
 
@@ -31,7 +32,7 @@ def extract_participants(link: Optional[str]) -> list[Participant]:
     if not link:
         raise ValueError("tournament link not provided")
 
-    response = requests.get(link, headers=HEADERS)
+    response = get(link)
     tree = HTMLParser(response.text)
     header_element = tree.css_first(
         "body > div.main > div > div.standings.completed > table > tbody > tr:nth-child(1)"
@@ -69,7 +70,7 @@ def extract_decklist(link: Optional[str]) -> list[Card]:
     if not link:
         raise ValueError("decklist link not provided")
 
-    response = requests.get(link, headers=HEADERS)
+    response = get(link)
     tree = HTMLParser(response.text)
     card_container_list = tree.css(".cards")
 
@@ -98,7 +99,7 @@ def extract_matches(participant: Participant) -> list[Match]:
     if not participant.matches:
         return []
 
-    response = requests.get(participant.matches, headers=HEADERS)
+    response = get(participant.matches)
     tree = HTMLParser(response.text)
 
     # Use the 'history' class to find the table as seen in the HTML snippet
