@@ -7,6 +7,6 @@ with staging as (
 )
 
 select
-    {{ dbt_utils.generate_surrogate_key(['card_name', 'card_code']) }} as card_id,
+    {{ dbt_utils.generate_surrogate_key(['card_name', 'card_kind', 'card_code']) }} as card_id,
     *
 from staging

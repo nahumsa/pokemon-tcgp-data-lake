@@ -36,6 +36,12 @@ models:
       - name: source_participant_id
         tests:
           - not_null
+      - name: card_kind
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["pokemon", "trainer", "energy"]
 
   - name: stg_matches
     description: Staged match data.

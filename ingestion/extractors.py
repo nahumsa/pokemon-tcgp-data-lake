@@ -18,8 +18,11 @@ def extract_tournaments(response: requests.Response) -> list[Tournament]:
         tournament_page: Optional[str] = None
         tournament_metadata = tournaments.attributes
 
-        if page := tournaments.css_first("a").attributes.get("href"):
-            tournament_page = BASE_URL + page
+        if link := tournaments.css_first("a"):
+            if page := link.attributes.get("href"):
+                tournament_page = BASE_URL + page
+            if data_time := link.attributes.get("data-time"):
+                tournament_metadata["data-time"] = data_time
 
         tournament_list.append(
             Tournament(**dict(**tournament_metadata, tournament_page=tournament_page))
@@ -51,7 +54,7 @@ def extract_participants(link: Optional[str]) -> list[Participant]:
     ]
 
 
-def parse_card(text: str) -> Card:
+def parse_card(text: str, kind: str, code: Optional[str] = None) -> Card:
     match = re.match(REGEX_CARD_PATTERN, text)
 
     if match:
@@ -59,11 +62,38 @@ def parse_card(text: str) -> Card:
             **{
                 "quantity": int(match.group(1)),
                 "name": match.group(2).strip(),
-                "code": match.group(3) if match.group(3) else None,
+                "code": match.group(3) or code,
+                "kind": kind,
             }
         )
 
     raise ValueError("invalid card string")
+
+
+def extract_card_code(card_node) -> Optional[str]:
+    link = card_node.css_first("a")
+    if not link:
+        return None
+
+    href = link.attributes.get("href", "")
+    match = re.search(r"/cards/([^/]+)/([^/]+)$", href)
+    if not match:
+        return None
+
+    return f"{match.group(1)}-{match.group(2)}"
+
+
+def extract_card_kind(card_container) -> str:
+    heading = card_container.css_first(".heading")
+    heading_text = heading.text(strip=True).lower() if heading else ""
+    if "energy" in heading_text:
+        return "energy"
+    if "trainer" in heading_text:
+        return "trainer"
+    if "pokemon" in heading_text or "pokémon" in heading_text:
+        return "pokemon"
+
+    raise ValueError(f"unknown card kind heading: {heading_text!r}")
 
 
 def extract_decklist(link: Optional[str]) -> list[Card]:
@@ -76,7 +106,13 @@ def extract_decklist(link: Optional[str]) -> list[Card]:
 
     decklist = []
     for raw_card_node in card_container_list:
-        decklist.extend([parse_card(node.text()) for node in raw_card_node.css("p")])
+        kind = extract_card_kind(raw_card_node)
+        decklist.extend(
+            [
+                parse_card(node.text(), kind=kind, code=extract_card_code(node))
+                for node in raw_card_node.css("p")
+            ]
+        )
 
     return decklist
 

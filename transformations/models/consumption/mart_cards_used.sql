@@ -28,6 +28,7 @@ cards_with_sets as (
     select
         dc.card_name,
         dc.card_code,
+        dc.card_kind,
         dc.quantity,
         dc.participant_id,
         ts.set_name
@@ -40,11 +41,13 @@ select
     set_name,
     card_name,
     card_code,
+    card_kind,
     sum(quantity) as total_used,
     count(distinct participant_id) as decks_containing
 from cards_with_sets
 group by
     set_name,
     card_name,
-    card_code
+    card_code,
+    card_kind
 order by total_used desc

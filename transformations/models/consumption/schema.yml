@@ -72,9 +72,10 @@ models:
     description: "Monthly aggregation of deck archetype popularity and performance."
     tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - tournament_month
-            - archetype
+          arguments:
+            combination_of_columns:
+              - tournament_month
+              - archetype
     columns:
       - name: tournament_month
         description: "The month of the tournaments."
@@ -91,10 +92,12 @@ models:
     description: "Analysis of card inclusion rates and average quantities within each deck archetype."
     tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - archetype
-            - card_name
-            - card_code
+          arguments:
+            combination_of_columns:
+              - archetype
+              - card_name
+              - card_kind
+              - card_code
     columns:
       - name: archetype
         description: "Deck archetype."

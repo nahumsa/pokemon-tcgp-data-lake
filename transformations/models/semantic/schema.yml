@@ -19,7 +19,8 @@ models:
         description: "Type of card (pokemon, trainer, energy)."
         tests:
           - accepted_values:
-              values: ["pokemon", "trainer", "energy"]
+              arguments:
+                values: ["pokemon", "trainer", "energy"]
 
   - name: dim_participants
     description: "Dimension table containing tournament participants."
@@ -33,8 +34,9 @@ models:
         description: "Foreign key linking to the tournament."
         tests:
           - relationships:
-              to: ref('dim_tournaments')
-              field: tournament_id
+              arguments:
+                to: ref('dim_tournaments')
+                field: tournament_id
               config:
                 severity: warn
       - name: player_name
@@ -74,8 +76,9 @@ models:
           - unique
           - not_null
           - relationships:
-              to: ref('dim_participants')
-              field: participant_id
+              arguments:
+                to: ref('dim_participants')
+                field: participant_id
       - name: archetype
         description: "Primary archetype of the deck (e.g., Dragapult, Charizard)."
         tests:
@@ -93,8 +96,9 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('dim_participants')
-              field: participant_id
+              arguments:
+                to: ref('dim_participants')
+                field: participant_id
       - name: card_name
         description: "Name of the card included."
         tests:
@@ -117,14 +121,16 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('dim_participants')
-              field: participant_id
+              arguments:
+                to: ref('dim_participants')
+                field: participant_id
       - name: tournament_id
         description: "Foreign key to the tournament."
         tests:
           - relationships:
-              to: ref('dim_tournaments')
-              field: tournament_id
+              arguments:
+                to: ref('dim_tournaments')
+                field: tournament_id
               config:
                 severity: warn
       - name: round
@@ -135,7 +141,8 @@ models:
         description: "Outcome of the match for the participant."
         tests:
           - accepted_values:
-              values: ["WIN", "LOSS", "TIE"]
+              arguments:
+                values: ["WIN", "LOSS", "TIE"]
 
   - name: dim_pokemon_sets
     description: "Dimension table containing Pokémon TCG expansion sets and their legality dates."

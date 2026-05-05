@@ -1,6 +1,7 @@
 card_name_1,card_name_2,archetype,sub_archetype
 Meganium,Teal Mask Ogerpon ex,Meganinum Ogerpon,Meganium Ogerpon
 Dragapult ex,Dusknoir,Dragapult,Dragapult Dusknoir
+Dragapult ex,,Dragapult,Dragapult
 Gholdengo ex,Lunatone,Gholdengo,Gholdengo Lunatone
 Gardevoir ex,Jellicent ex,Gardevoir,Gardevoir Jellicent
 Charizard ex,Noctowl,Charizard,Charizard Noctowl
@@ -23,13 +24,12 @@ Mega Venusaur ex,,Mega Venusaur,Mega Venusaur
 Mega Lucario ex,Hariyama,Mega Lucario,Mega Lucario Hariyama
 Cynthia's Garchomp ex,,Cynthia's Garchomp,Cynthia's Garchomp
 Joltik,Pikachu ex,Joltik,Joltik Pikachu
-Gholdengo ex,,Gholdengo,Gholdengo
-Seaking,Thwackey,Seaking,Seaking Thwackey
+Seaking,Thwackey,Festival Lead,Festival Lead
+Dipplin,Thwackey,Festival Lead,Festival Lead
 Froslass ex,Munkidori ex,Froslass,Froslass Munkidori
 Slowking,,Slowking,Slowking
 Hydreigon ex,,Hydreigon,Hydreigon
 Toxtricity,Mega Absol ex,Toxtricity,Toxtricity Mega Absol
-Dipplin,Thwackey,Dipplin,Dipplin Thwackey
 Typhlosion,,Typhlosion,Typhlosion
 Pidgeot ex,,Pidgeot,Pidgeot
 Dragapult ex,,Dragapult,Dragapult
@@ -165,4 +165,4 @@ Aegislash,,Aegislash,Aegislash
 Iron Thorns ex,Iron Crown ex,Iron Thorns,Iron Thorns Iron Crown
 Farigiraf ex,Crustle,Farigiraf,Farigiraf Crustle
 Gothitelle,,Gothitelle,Gothitelle
-Lillie's Clefairy ex,,Lillie's Clefairy,Lillie's Clefairy
+Gholdengo ex,,Gholdengo,Gholdengo

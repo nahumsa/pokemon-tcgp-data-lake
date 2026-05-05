@@ -10,6 +10,7 @@ deck_compositions as (
         participant_id,
         card_name,
         card_code,
+        card_kind,
         quantity
     from {{ ref('fct_deck_composition') }}
 ),
@@ -27,17 +28,19 @@ card_usage as (
         ad.archetype,
         dc.card_name,
         dc.card_code,
+        dc.card_kind,
         count(distinct ad.participant_id) as decks_with_card,
         avg(dc.quantity) as mean_quantity_when_included
     from archetype_decks as ad
     inner join deck_compositions as dc on ad.participant_id = dc.participant_id
-    group by 1, 2, 3
+    group by 1, 2, 3, 4
 )
 
 select
     cu.archetype,
     cu.card_name,
     cu.card_code,
+    cu.card_kind,
     cu.decks_with_card,
     archt.total_decks as total_archetype_decks,
     round(cu.decks_with_card * 100.0 / archt.total_decks, 2) as inclusion_rate,
