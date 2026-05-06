@@ -7,19 +7,18 @@ from boring_semantic_layer import from_yaml
 # Setup same environment as server
 base_dir: Path = Path(__file__).parent
 yaml_path: Path = base_dir / "boring.yml"
-con: Any = ibis.duckdb.connect(str(base_dir.parent / "pokemon_tcgp_pipeline.duckdb"))
+con: Any = ibis.duckdb.connect(str(base_dir.parent.parent / "pokemon_tcgp_pipeline.duckdb"))
 tables: Dict[str, Any] = {
-    "mart_archetype_stats": con.table(
-        "mart_archetype_stats", database="main_consumption"
-    ),
+    "mart_archetype_stats": con.table("mart_archetype_stats", database="main_consumption"),
+    "mart_monthly_meta_shifts": con.table("mart_monthly_meta_shifts", database="main_consumption"),
+    "mart_archetype_matchups": con.table("mart_archetype_matchups", database="main_consumption"),
+    "mart_cards_used": con.table("mart_cards_used", database="main_consumption"),
+    "mart_archetype_card_staples": con.table("mart_archetype_card_staples", database="main_consumption"),
+    "mart_archetype_matchup_suggestions": con.table("mart_archetype_matchup_suggestions", database="main_consumption"),
+    "mart_tournament_analysis": con.table("mart_tournament_analysis", database="main_consumption"),
+    "mart_deck_analysis": con.table("mart_deck_analysis", database="main_consumption"),
     "dim_cards": con.table("dim_cards", database="main_semantic"),
     "fct_matches": con.table("fct_matches", database="main_semantic"),
-    "mart_archetype_card_staples": con.table(
-        "mart_archetype_card_staples", database="main_consumption"
-    ),
-    "mart_archetype_matchups": con.table(
-        "mart_archetype_matchups", database="main_consumption"
-    ),
 }
 
 models: Dict[str, Any] = from_yaml(str(yaml_path), tables=tables)
@@ -81,8 +80,8 @@ run_test(
     "Performance against Gholdengo",
     "archetype_matchups",
     dimensions=["p1_archetype"],
-    measures=["win_rate"],
+    measures=["win_no_ties_rate"],
     filters=lambda t: t.p2_archetype == "Gholdengo",
-    order_by=[("win_rate", "desc")],
+    order_by=[("win_no_ties_rate", "desc")],
     limit=5,
 )

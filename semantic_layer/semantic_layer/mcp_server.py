@@ -17,10 +17,15 @@ yaml_path: Path = base_dir / "boring.yml"
 con: Any = ibis.duckdb.connect(str(base_dir.parent.parent / "pokemon_tcgp_pipeline.duckdb"))
 tables: Dict[str, Any] = {
     "mart_archetype_stats": con.table("mart_archetype_stats", database="main_consumption"),
+    "mart_monthly_meta_shifts": con.table("mart_monthly_meta_shifts", database="main_consumption"),
+    "mart_archetype_matchups": con.table("mart_archetype_matchups", database="main_consumption"),
+    "mart_cards_used": con.table("mart_cards_used", database="main_consumption"),
+    "mart_archetype_card_staples": con.table("mart_archetype_card_staples", database="main_consumption"),
+    "mart_archetype_matchup_suggestions": con.table("mart_archetype_matchup_suggestions", database="main_consumption"),
+    "mart_tournament_analysis": con.table("mart_tournament_analysis", database="main_consumption"),
+    "mart_deck_analysis": con.table("mart_deck_analysis", database="main_consumption"),
     "dim_cards": con.table("dim_cards", database="main_semantic"),
     "fct_matches": con.table("fct_matches", database="main_semantic"),
-    "mart_archetype_card_staples": con.table("mart_archetype_card_staples", database="main_consumption"),
-    "mart_archetype_matchups": con.table("mart_archetype_matchups", database="main_consumption"),
 }
 
 # Load semantic models from boring.yml
