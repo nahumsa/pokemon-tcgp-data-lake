@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: pokemon_tcg
-    schema: pokemon_tcgp_data
+    schema: pokemon_tcg_data
     tables:
       - name: tournaments
       - name: participant_deck

@@ -201,7 +201,7 @@ def matches(participants: dlt.sources.DltResource):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Ingest Pokemon TCGP data.")
+    parser = argparse.ArgumentParser(description="Ingest Pokemon TCG data.")
     parser.add_argument(
         "--backfill",
         action="store_true",

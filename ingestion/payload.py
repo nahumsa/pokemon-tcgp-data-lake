@@ -3,7 +3,6 @@ from pydantic import BaseModel
 
 
 class GameEnum(str, Enum):
-    POCKET = "POCKET"
     TCG = "PTCG"
 
 

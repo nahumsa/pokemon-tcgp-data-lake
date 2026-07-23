@@ -1,7 +1,7 @@
-# Pokemon TCGP Data Lake & AI Analyst
+# Pokemon TCG Data Lake
 
-An enterprise-grade data platform for Pokemon TCG Pocket, featuring a component-based monorepo architecture.
-This project implements a full ELT (Extract, Load, Transform) pipeline, a semantic layer via MCP (Model Context Protocol), and an AI-powered Analyst CLI using Google's Gemini.
+A component-based data platform for Pokemon tournament analytics.
+This project implements an ELT (Extract, Load, Transform) pipeline and exposes its analytical models through an MCP-compatible semantic layer. The agent-facing application layer is intentionally not included while it is being redesigned.
 
 ## 🏗 Architecture
 
@@ -10,7 +10,6 @@ The system is designed following the principle of **Separation of Concerns** and
 1. **Ingestion (`/ingestion`)**: A `dlt` (Data Load Tool) pipeline that scrapes tournament data and participant decklists, loading them into a DuckDB "Bronze/Silver" layer.
 2. **Transformations (`/transformations`)**: A `dbt` project that models the raw data into a dimensional "Gold" layer (marts) for analysis.
 3. **Semantic Layer (`/semantic_layer`)**: An MCP-compatible server built with `boring-semantic-layer` and `Ibis`. It abstracts complex SQL into semantic entities (Archetypes, Matches, Staples).
-4. **AI Analyst CLI (`/pokemon_cli`)**: A Python CLI using the **Gateway** and **Controller** patterns. It integrates with Gemini to allow natural language querying of the semantic layer.
 
 ---
 
@@ -21,7 +20,6 @@ The system is designed following the principle of **Separation of Concerns** and
 - **Python 3.12+**
 - **[uv](https://github.com/astral-sh/uv)**: High-performance Python package manager.
 - **Docker & Docker Compose** (optional, for containerized execution).
-- **Gemini API Key**: Obtain from [Google AI Studio](https://aistudio.google.com/).
 
 ### Installation
 
@@ -29,19 +27,13 @@ The system is designed following the principle of **Separation of Concerns** and
 
     ```bash
     git clone <repo-url>
-    cd pokemon-tcgp-data-lake
+    cd pokemon-tcg-data-lake
     ```
 
-2. **Set Environment Variables**:
+2. **Synchronize Workspace**:
 
     ```bash
-    export GEMINI_API_KEY="your-key-here"
-    ```
-
-3. **Synchronize Workspace**:
-
-    ```bash
-    uv sync
+    uv sync --all-packages --locked
     ```
 
 ---
@@ -54,13 +46,13 @@ Extract data from tournament sources and load into DuckDB.
 
 ```bash
 # Run incremental ingestion (current month)
-uv run --package pokemon-tcgp-ingestion python -m ingestion.main
+uv run --package pokemon-tcg-ingestion python -m ingestion.main
 
 # Run incremental ingestion (for a specific month)
-uv run --package pokemon-tcgp-ingestion python -m ingestion.main --month 2026-01
+uv run --package pokemon-tcg-ingestion python -m ingestion.main --month 2026-01
 
 # Run backfill (could take a while)
-uv run --package pokemon-tcgp-ingestion python -m ingestion.main --backfill
+uv run --package pokemon-tcg-ingestion python -m ingestion.main --backfill
 ```
 
 ### 2. Transformations (T)
@@ -72,17 +64,6 @@ cd transformations
 uv run dbt deps
 uv run dbt run
 ```
-
-### 3. AI Analyst Chat (The "UI")
-
-Engage with the data using natural language.
-
-```bash
-# Run the CLI
-uv run --package pokemon-tcgp-cli python -m pokemon_cli.main
-```
-
----
 
 ## 📦 Monorepo Workflow
 
@@ -97,8 +78,8 @@ To add a package to a specific component:
 uv add <package-name> --package <internal-package-name>
 
 # Examples
-uv add pandas --package pokemon-tcgp-ingestion
-uv add rich --package pokemon-tcgp-cli
+uv add pandas --package pokemon-tcg-ingestion
+uv add ibis-framework --package pokemon-tcg-semantic-layer
 ```
 
 ### Running Commands
@@ -113,10 +94,9 @@ uv run --package <internal-package-name> <command>
 
 | Component | Directory | Internal Package Name |
 |-----------|-----------|-----------------------|
-| Ingestion | `ingestion/` | `pokemon-tcgp-ingestion` |
-| Semantic Layer | `semantic_layer/` | `pokemon-tcgp-semantic-layer` |
-| Analyst CLI | `pokemon_cli/` | `pokemon-tcgp-cli` |
-| Transformations | `transformations/` | `pokemon-tcgp-transformations` |
+| Ingestion | `ingestion/` | `pokemon-tcg-ingestion` |
+| Semantic Layer | `semantic_layer/` | `pokemon-tcg-semantic-layer` |
+| Transformations | `transformations/` | `pokemon-tcg-transformations` |
 
 ---
 
@@ -127,9 +107,6 @@ The project is fully containerized with optimized multi-stage builds.
 ```bash
 # Build and run the entire stack
 docker-compose up -d
-
-# Run the interactive CLI via Docker
-docker-compose run cli-chat
 ```
 
 ---
@@ -149,17 +126,8 @@ cd transformations
 uv run sqlfluff lint models
 ```
 
-### Testing
-
-Unit tests are co-located within their respective components.
-
-```bash
-# Run CLI unit tests
-uv run pytest pokemon_cli/tests/
-```
-
 ### CI/CD
 
-Our GitHub Actions pipeline (`.github/workflows/ci.yml`) automatically runs SQL linting, Python linting, and unit tests on every push to `main`.
+Our GitHub Actions pipeline (`.github/workflows/ci.yml`) automatically runs SQL and Python linting on every push to `main`.
 
 ---

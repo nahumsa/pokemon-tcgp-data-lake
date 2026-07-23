@@ -1,7 +1,7 @@
 [project]
-name = "pokemon-tcgp-transformations"
+name = "pokemon-tcg-transformations"
 version = "0.1.0"
-description = "dbt transformations for Pokemon TCGP"
+description = "dbt transformations for Pokemon TCG"
 requires-python = ">=3.12"
 dependencies = [
     "dbt-duckdb>=1.8.0",

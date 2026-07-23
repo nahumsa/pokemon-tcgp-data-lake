@@ -1,7 +1,7 @@
 [project]
-name = "pokemon-tcgp-ingestion"
+name = "pokemon-tcg-ingestion"
 version = "0.1.0"
-description = "Data ingestion pipeline for Pokemon TCGP"
+description = "Data ingestion pipeline for Pokemon TCG"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic-settings>=2.8.1",

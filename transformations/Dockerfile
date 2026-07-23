@@ -9,14 +9,14 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     --mount=type=bind,source=transformations/pyproject.toml,target=transformations/pyproject.toml \
-    uv sync --frozen --no-install-project --no-dev --package pokemon-tcgp-transformations
+    uv sync --frozen --no-install-project --no-dev --package pokemon-tcg-transformations
 
 ADD transformations /app/transformations
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-dev --package pokemon-tcgp-transformations
+    uv sync --frozen --no-dev --package pokemon-tcg-transformations
 
 # Install dbt dependencies
 WORKDIR /app/transformations

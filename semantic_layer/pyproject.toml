@@ -1,7 +1,7 @@
 [project]
-name = "pokemon-tcgp-semantic-layer"
+name = "pokemon-tcg-semantic-layer"
 version = "0.1.0"
-description = "Semantic layer and MCP server for Pokemon TCGP"
+description = "Semantic layer and MCP server for Pokemon TCG"
 requires-python = ">=3.12"
 dependencies = [
     "boring-semantic-layer[mcp]>=0.3.7",

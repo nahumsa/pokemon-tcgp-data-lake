@@ -14,16 +14,16 @@ Add the following to your `claude_desktop_config.json`:
       "args": [
         "run",
         "--project",
-        "/path/to/pokemon-tcgp-data-lake",
+        "/path/to/pokemon-tcg-data-lake",
         "python",
-        "/path/to/pokemon-tcgp-data-lake/semantic_layer/mcp_server.py"
+        "/path/to/pokemon-tcg-data-lake/semantic_layer/semantic_layer/mcp_server.py"
       ]
     }
   }
 }
 ```
 
-Replace `/path/to/pokemon-tcgp-data-lake` with the absolute path to this repository.
+Replace `/path/to/pokemon-tcg-data-lake` with the absolute path to this repository.
 
 ## 2. Available Tools
 
@@ -44,25 +44,6 @@ You can ask the LLM things like:
 
 ## 4. Technical Details
 
-- **Database**: DuckDB (`pokemon_tcgp_pipeline.duckdb`)
+- **Database**: DuckDB (`pokemon_tcg_pipeline.duckdb`)
 - **Engine**: Ibis + Boring Semantic Layer
 - **Transport**: stdio
-
-## 5. CLI Chat Application
-
-A standalone CLI chat application is available in the `cli/` folder. It bridges the MCP server with Google's Gemini AI.
-
-### Running the CLI Chat
-
-1. Set your Gemini API key:
-   ```bash
-   export GEMINI_API_KEY=your_api_key_here
-   ```
-2. Run the chat:
-   ```bash
-   uv run python cli/chat.py
-   ```
-   Or provide the key as an argument:
-   ```bash
-   uv run python cli/chat.py your_api_key_here
-   ```

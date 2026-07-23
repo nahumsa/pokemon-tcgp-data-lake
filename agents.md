@@ -4,10 +4,10 @@ This document is designed to assist AI Agents and Developers in understanding th
 
 ## Project Context
 
-This is a **Pokemon TCG / TCG Pocket Data Lake** containing:
+This is a **Pokemon TCG Data Lake** containing:
 
 1. **Ingestion Layer**: Python scripts using `dlt` to scrape Limitless TCG.
-2. **Storage Layer**: Local `DuckDB` database (`pokemon_tcgp_pipeline.duckdb`).
+2. **Storage Layer**: Local `DuckDB` database (`pokemon_tcg_pipeline.duckdb`).
 3. **Transformation Layer**: A `dbt` project for cleaning and modeling data.
 
 ## Specialized Agent Roles
@@ -48,8 +48,8 @@ When working on this codebase, assume one of the following roles based on the ta
 
 **Focus**: Querying insights and verifying results.
 
-- **Target**: `pokemon_tcgp_pipeline.duckdb`
-- **Key Schema**: `consumption` (via dbt) or `pokemon_tcgp_data` (raw).
+- **Target**: `pokemon_tcg_pipeline.duckdb`
+- **Key Schema**: `consumption` (via dbt) or `pokemon_tcg_data` (raw).
 - **Guidelines**:
   - Query the `consumption` layer for reliable metrics (`mart_deck_analysis`, `mart_cards_used`).
   - Use `duckdb` CLI or Python `duckdb.connect()` for exploration.

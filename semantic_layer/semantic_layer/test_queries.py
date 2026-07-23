@@ -7,7 +7,7 @@ from boring_semantic_layer import from_yaml
 # Setup same environment as server
 base_dir: Path = Path(__file__).parent
 yaml_path: Path = base_dir / "boring.yml"
-con: Any = ibis.duckdb.connect(str(base_dir.parent.parent / "pokemon_tcgp_pipeline.duckdb"))
+con: Any = ibis.duckdb.connect(str(base_dir.parent.parent / "pokemon_tcg_pipeline.duckdb"))
 tables: Dict[str, Any] = {
     "mart_archetype_stats": con.table("mart_archetype_stats", database="main_consumption"),
     "mart_monthly_meta_shifts": con.table("mart_monthly_meta_shifts", database="main_consumption"),

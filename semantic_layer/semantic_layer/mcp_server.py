@@ -14,7 +14,7 @@ yaml_path: Path = base_dir / "boring.yml"
 
 # Pre-load tables from specific DuckDB schemas
 # Boring Semantic Layer uses Ibis under the hood
-con: Any = ibis.duckdb.connect(str(base_dir.parent.parent / "pokemon_tcgp_pipeline.duckdb"))
+con: Any = ibis.duckdb.connect(str(base_dir.parent.parent / "pokemon_tcg_pipeline.duckdb"))
 tables: Dict[str, Any] = {
     "mart_archetype_stats": con.table("mart_archetype_stats", database="main_consumption"),
     "mart_monthly_meta_shifts": con.table("mart_monthly_meta_shifts", database="main_consumption"),

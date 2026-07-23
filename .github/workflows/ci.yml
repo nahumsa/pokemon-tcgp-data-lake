@@ -21,7 +21,7 @@ jobs:
           version: "latest"
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --all-packages --locked
 
       - name: Install dbt packages
         run: |
@@ -35,6 +35,3 @@ jobs:
 
       - name: Lint with Ruff
         run: uv run ruff check .
-
-      - name: Run CLI Tests
-        run: uv run pytest pokemon_cli/tests/

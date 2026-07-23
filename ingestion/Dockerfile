@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
   --mount=type=bind,source=uv.lock,target=uv.lock \
   --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
   --mount=type=bind,source=ingestion/pyproject.toml,target=ingestion/pyproject.toml \
-  uv sync --frozen --no-install-project --no-dev --package pokemon-tcgp-ingestion
+  uv sync --frozen --no-install-project --no-dev --package pokemon-tcg-ingestion
 
 # Add the rest of the project
 ADD ingestion /app/ingestion
@@ -20,7 +20,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
   --mount=type=bind,source=uv.lock,target=uv.lock \
   --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
   --mount=type=bind,source=ingestion/pyproject.toml,target=ingestion/pyproject.toml \
-  uv sync --frozen --no-dev --package pokemon-tcgp-ingestion
+  uv sync --frozen --no-dev --package pokemon-tcg-ingestion
 
 # Final Stage
 FROM python:3.12-slim-bookworm
