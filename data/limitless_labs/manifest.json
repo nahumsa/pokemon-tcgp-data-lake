@@ -1,0 +1,40 @@
+{
+  "retrieved_at_utc": "2026-10-04T21:20:16.202395+00:00",
+  "scope": "Latest 3 completed Masters TCG events at retrieval",
+  "snapshot_sha256": "8aeea6326903989ee2a0026266f071baa6abd5d0ad67d36db8354bf00ad7691d",
+  "table_rows": {
+    "tournaments": 3,
+    "tournament_participants": 4684,
+    "participant_deck": 3609,
+    "participant_matches": 39061
+  },
+  "events": [
+    {
+      "name": "Regional Championship Recife",
+      "date": "2026-10-03",
+      "url": "https://labs.limitlesstcg.com/0075/standings",
+      "source_updated_at": "2026-10-04 20:20:14",
+      "participants": 1074,
+      "decklists": 0,
+      "player_match_records": 8759
+    },
+    {
+      "name": "Regional Championship Frankfurt",
+      "date": "2026-09-26",
+      "url": "https://labs.limitlesstcg.com/0074/standings",
+      "source_updated_at": "2026-09-27 17:29:45",
+      "participants": 2793,
+      "decklists": 2793,
+      "player_match_records": 23735
+    },
+    {
+      "name": "Regional Championship Brisbane",
+      "date": "2026-09-26",
+      "url": "https://labs.limitlesstcg.com/0073/standings",
+      "source_updated_at": "2026-09-27 09:30:12",
+      "participants": 817,
+      "decklists": 816,
+      "player_match_records": 6567
+    }
+  ]
+}
