@@ -65,7 +65,71 @@ uv run dbt deps
 uv run dbt run
 ```
 
+### Limitless Labs regional and international events
+
+The Labs importer adds the latest three **completed Masters TCG events** to the
+same raw tables used by the Limitless Play pipeline. It fetches full standings,
+all rounds, and every published decklist. Live events are excluded. Missing
+decklists do not exclude players from the participant dimension.
+
+```bash
+# Fetch, save a reproducible snapshot, and merge into the local DuckDB database
+uv run --package pokemon-tcg-ingestion python -m ingestion.labs --latest 3 --snapshot data/limitless_labs/latest.json.gz
+
+# Reload the checked-in snapshot without fetching from Labs
+uv run --package pokemon-tcg-ingestion python -m ingestion.labs --from-snapshot data/limitless_labs/latest.json.gz
+
+cd transformations
+uv run dbt deps
+uv run dbt seed --profiles-dir .
+uv run dbt run --profiles-dir .
+uv run dbt test --profiles-dir .
+```
+
+Labs URLs identify events separately from Play URLs, so rerunning an import merges
+the same event without overwriting Play records. Duplicate player names within an
+event receive a `[Labs <participant id>]` suffix in the existing name-based keys;
+their original names and source IDs remain in the raw standings table. Pairings
+use `0` for ties and `-1` for double losses. Tournament dates use the local calendar
+date shown by Labs. The snapshot contains public tournament player names and results.
+Labs standings are calculated outside official tournament software and can contain
+errors. Labs events use their published archetype labels, including newer decks
+absent from the `meta_decks` seed, using the full source label in both archetype
+fields because Labs does not publish the seed's parent/variant hierarchy.
+Other events continue to use the existing
+card-based archetype classifier. Events without published decks have no archetype
+data until Labs publishes it. The local dbt profile does not install network
+extensions; these transformations operate entirely on the local DuckDB tables.
+
 ## 📦 Monorepo Workflow
+
+### Tournament source and event setting
+
+`dim_tournaments`, `mart_tournament_analysis`, and `mart_deck_analysis` expose two
+independent attributes. Both are also filterable dimensions in the semantic
+layer's `tournament_analysis` and `deck_analysis` models:
+
+| Attribute | Current Play imports | Labs championship imports | Unrecognized legacy URLs |
+|-----------|----------------------|---------------------------|--------------------------|
+| `source` | `limitless_play` | `limitless_labs` | `unknown` |
+| `event_type` | `online` | `in_person` | `unknown` |
+
+New imports record these attributes explicitly. Existing snapshots and raw tables
+without the new columns are supported: staging uses known URL prefixes as legacy
+defaults, reflecting the current online-only Play importer and Labs championship
+scope. Explicit metadata takes precedence, so a future in-person Play event can
+still have `source = 'limitless_play'` and `event_type = 'in_person'`.
+
+```sql
+select tournament_name, tournament_date, player_count
+from main_consumption.mart_tournament_analysis
+where source = 'limitless_labs' and event_type = 'in_person';
+```
+
+For match-level modeling, join `fct_matches` to `dim_tournaments` on
+`tournament_id` and group/filter using these attributes. Existing aggregate
+archetype marts retain their current grain and combine sources; filtering those
+requires rebuilding the aggregation from the facts with the tournament dimension.
 
 This project uses **uv workspaces** to manage multiple components. When adding dependencies or running commands, you must specify the package name (found in each component's `pyproject.toml`).
 

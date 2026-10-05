@@ -4,6 +4,3 @@ pokemon_tcg_transform:
     dev:
       type: duckdb
       path: "../pokemon_tcg_pipeline.duckdb"
-      extensions:
-        - httpfs
-        - parquet

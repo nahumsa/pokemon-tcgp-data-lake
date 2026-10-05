@@ -29,9 +29,25 @@ jobs:
           uv run dbt deps
 
       - name: Lint with SQLFluff
+        # Load the raw tables before dbt-backed SQL compilation.
+        # This import uses the saved snapshot and makes no requests to Labs.
         run: |
+          uv run --package pokemon-tcg-ingestion python -m ingestion.labs --from-snapshot data/limitless_labs/latest.json.gz
           cd transformations
           uv run sqlfluff lint models
 
+      - name: Lint SQL data tests
+        run: |
+          cd transformations
+          uv run sqlfluff lint tests/assert_standings_participants_are_present.sql tests/assert_labs_archetypes_match_source.sql tests/assert_tournament_classification.sql
+
       - name: Lint with Ruff
         run: uv run ruff check .
+
+      - name: Test Labs importer
+        run: uv run pytest ingestion/test_labs.py -q
+
+      - name: Build and test analytics
+        run: |
+          cd transformations
+          uv run dbt build --profiles-dir .

@@ -198,6 +198,12 @@ tournament_analysis:
   database: main_consumption
   description: "Tournament-level summaries, player counts, match activity, and set/meta period. Use this to understand data coverage and recent tournament activity."
   dimensions:
+    source:
+      expr: _.source
+      description: "Data provider: limitless_play, limitless_labs, or unknown."
+    event_type:
+      expr: _.event_type
+      description: "Event setting: online, in_person, or unknown. Independent of data provider."
     tournament_id:
       expr: _.tournament_id
       description: "Unique tournament identifier."
@@ -229,6 +235,12 @@ deck_analysis:
   database: main_consumption
   description: "Participant-level tournament performance. Use this to identify high-performing players and decklists."
   dimensions:
+    source:
+      expr: _.source
+      description: "Tournament data provider."
+    event_type:
+      expr: _.event_type
+      description: "Tournament setting: online, in_person, or unknown."
     set_name:
       expr: _.set_name
       description: "The set or meta period."

@@ -1,4 +1,16 @@
-with deck_cards as (
+with labs_archetypes as (
+    select
+        {{ dbt_utils.generate_surrogate_key(['name', 'tournament_link']) }} as participant_id,
+        deck as archetype,
+        deck as sub_archetype
+    from {{ source('pokemon_tcg', 'tournament_participants') }}
+    where tournament_link like 'https://labs.limitlesstcg.com/%' and deck is not null
+    qualify row_number() over (
+        partition by participant_id order by _dlt_load_id desc
+    ) = 1
+),
+
+deck_cards as (
     select
         participant_id,
         card_name
@@ -41,5 +53,18 @@ select
     participant_id,
     archetype,
     sub_archetype
-from ranked
-where rn = 1
+from labs_archetypes
+
+union all
+
+select
+    r.participant_id,
+    r.archetype,
+    r.sub_archetype
+from ranked as r
+where
+    r.rn = 1
+    and not exists (
+        select 1 from labs_archetypes as l
+        where l.participant_id = r.participant_id
+    )

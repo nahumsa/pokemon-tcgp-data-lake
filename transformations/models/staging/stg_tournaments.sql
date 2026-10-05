@@ -1,3 +1,10 @@
+{% set relation = source('pokemon_tcg', 'tournaments') %}
+{% if execute %}
+    {% set raw_columns = adapter.get_columns_in_relation(relation) | map(attribute='name') | list %}
+{% else %}
+    {% set raw_columns = [] %}
+{% endif %}
+
 with source as (
     select * from {{ source('pokemon_tcg', 'tournaments') }}
 ),
@@ -12,7 +19,10 @@ renamed as (
         data_format as format,
         data_players::int as player_count,
         data_winner as winner_name,
-        _dlt_load_id
+        _dlt_load_id,
+        {{ tournament_source('tournament_page', 'source' if 'source' in raw_columns else 'null') }} as source,
+        {{ tournament_event_type('tournament_page', 'event_type' if 'event_type' in raw_columns else 'null') }}
+            as event_type
     from source
 )
 

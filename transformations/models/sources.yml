@@ -5,6 +5,7 @@ sources:
     schema: pokemon_tcg_data
     tables:
       - name: tournaments
+      - name: tournament_participants
       - name: participant_deck
       - name: participant_deck__decklist
       - name: participant_matches
