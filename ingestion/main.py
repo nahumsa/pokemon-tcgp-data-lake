@@ -40,6 +40,7 @@ from .payload import (
 # Suppress the pkg_resources deprecation warning from dlt
 warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API")
 
+
 def iter_tournaments(
     tournament_params: TournamentPayload,
     target_month: Optional[str] = None,
@@ -80,6 +81,8 @@ def iter_tournaments(
         response = get(BASE_URL + "/tournaments/completed", params=params)
 
         tournaments_list = extract_tournaments(response)
+        for tournament in tournaments_list:
+            tournament.event_type = tournament_params.type.value
 
         if not tournaments_list:
             print("No tournaments found on this page.")

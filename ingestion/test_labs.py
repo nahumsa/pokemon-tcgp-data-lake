@@ -3,6 +3,24 @@ import pytest
 from ingestion.labs import deck_row, latest_completed, match_rows
 
 
+def test_play_ingestion_records_source_and_requested_event_type(monkeypatch):
+    from ingestion import main
+    from ingestion.models import Tournament
+    from ingestion.payload import TournamentPayload
+
+    event = Tournament(
+        tournament_page="https://play.limitlesstcg.com/tournament/example"
+    )
+    monkeypatch.setattr(main, "get", lambda *args, **kwargs: object())
+    monkeypatch.setattr(main, "extract_tournaments", lambda response: [event])
+    payload = TournamentPayload(
+        game="PTCG", format="STANDARD", platform="all", type="online", time="all"
+    )
+    rows = list(main.iter_tournaments(payload, backfill=True))
+    assert rows[0][0].model_dump()["source"] == "limitless_play"
+    assert rows[0][0].model_dump()["event_type"] == "online"
+
+
 def test_latest_excludes_live_events_and_orders_by_start():
     events = [
         {"id": 1, "utc_start": "2026-09-01", "completed": 1},

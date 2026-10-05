@@ -103,6 +103,34 @@ extensions; these transformations operate entirely on the local DuckDB tables.
 
 ## 📦 Monorepo Workflow
 
+### Tournament source and event setting
+
+`dim_tournaments`, `mart_tournament_analysis`, and `mart_deck_analysis` expose two
+independent attributes. Both are also filterable dimensions in the semantic
+layer's `tournament_analysis` and `deck_analysis` models:
+
+| Attribute | Current Play imports | Labs championship imports | Unrecognized legacy URLs |
+|-----------|----------------------|---------------------------|--------------------------|
+| `source` | `limitless_play` | `limitless_labs` | `unknown` |
+| `event_type` | `online` | `in_person` | `unknown` |
+
+New imports record these attributes explicitly. Existing snapshots and raw tables
+without the new columns are supported: staging uses known URL prefixes as legacy
+defaults, reflecting the current online-only Play importer and Labs championship
+scope. Explicit metadata takes precedence, so a future in-person Play event can
+still have `source = 'limitless_play'` and `event_type = 'in_person'`.
+
+```sql
+select tournament_name, tournament_date, player_count
+from main_consumption.mart_tournament_analysis
+where source = 'limitless_labs' and event_type = 'in_person';
+```
+
+For match-level modeling, join `fct_matches` to `dim_tournaments` on
+`tournament_id` and group/filter using these attributes. Existing aggregate
+archetype marts retain their current grain and combine sources; filtering those
+requires rebuilding the aggregation from the facts with the tournament dimension.
+
 This project uses **uv workspaces** to manage multiple components. When adding dependencies or running commands, you must specify the package name (found in each component's `pyproject.toml`).
 
 ### Managing Dependencies

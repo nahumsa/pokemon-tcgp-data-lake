@@ -19,9 +19,7 @@ def extract_node_text(value: Any) -> str:
     return ""
 
 
-TextExtractorValidator = Annotated[
-    Any, BeforeValidator(extract_node_text)
-]
+TextExtractorValidator = Annotated[Any, BeforeValidator(extract_node_text)]
 
 
 class Participant(BaseModel):
@@ -49,6 +47,8 @@ class Participant(BaseModel):
 
 
 class Tournament(BaseModel):
+    source: str = "limitless_play"
+    event_type: Optional[str] = None
     data_date: Annotated[Optional[str], Field(alias="data-date")] = None
     data_time: Annotated[Optional[str], Field(alias="data-time")] = None
     data_name: Annotated[Optional[str], Field(alias="data-name")] = None

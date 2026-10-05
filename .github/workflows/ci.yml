@@ -39,7 +39,7 @@ jobs:
       - name: Lint SQL data tests
         run: |
           cd transformations
-          uv run sqlfluff lint tests/assert_standings_participants_are_present.sql tests/assert_labs_archetypes_match_source.sql
+          uv run sqlfluff lint tests/assert_standings_participants_are_present.sql tests/assert_labs_archetypes_match_source.sql tests/assert_tournament_classification.sql
 
       - name: Lint with Ruff
         run: uv run ruff check .

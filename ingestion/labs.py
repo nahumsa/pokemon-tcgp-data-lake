@@ -163,6 +163,7 @@ def extract_events(limit=3, workers=4):
                 "data_players": str(metadata["players"]),
                 "data_winner": winner,
                 "source": "limitless_labs",
+                "event_type": "in_person",
                 "division": "MA",
                 "completed": True,
                 "source_updated_at": metadata["updated_at"],
