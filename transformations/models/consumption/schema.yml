@@ -1,154 +1,213 @@
 version: 2
-
 models:
-  - name: mart_archetype_stats
-    description: "Overall performance statistics aggregated by deck archetype and sub-archetype."
-    columns:
-      - name: archetype
-        description: "Primary deck archetype."
-        tests:
-          - not_null
-      - name: total_matches
-        description: "Total number of matches played by this archetype."
-      - name: wins
-        description: "Total wins."
-      - name: win_rate
-        description: "Win rate percentage (0-100)."
-
-  - name: mart_archetype_matchups
-    description: "Head-to-head performance matrix between different archetypes."
-    columns:
-      - name: p1_archetype
-        description: "Archetype of the primary player."
-        tests:
-          - not_null
-      - name: p2_archetype
-        description: "Archetype of the opponent."
-        tests:
-          - not_null
-      - name: total_matches
-        description: "Number of matches recorded for this specific matchup."
-      - name: win_rate
-        description: "Win rate of Player 1 against Player 2."
-
-  - name: mart_cards_used
-    description: "Aggregation of card usage across all tournament decks."
-    columns:
-      - name: card_name
-        description: "Name of the card."
-        tests:
-          - not_null
-      - name: total_used
-        description: "Cumulative count of this card across all decks."
-      - name: decks_containing
-        description: "Number of unique decks that included at least one copy of this card."
-
-  - name: mart_deck_analysis
-    description: "Detailed performance analysis for each participant and their deck."
-    columns:
-      - name: player_name
-        description: "Name of the player."
-        tests:
-          - not_null
-      - name: tournament_url
-        description: "Link to the tournament standings."
-      - name: win_rate
-        description: "Percentage of matches won by this player in the tournament."
-
-  - name: mart_tournament_analysis
-    description: "Summary statistics for tournaments, including player counts and match activity."
-    columns:
-      - name: tournament_id
-        description: "Unique identifier for the tournament."
-        tests:
-          - unique
-          - not_null
-      - name: tournament_name
-        description: "Official name of the tournament."
-      - name: player_count
-        description: "Total number of participants recorded."
-
-  - name: mart_monthly_meta_shifts
-    description: "Monthly aggregation of deck archetype popularity and performance."
+- name: mart_archetype_stats
+  description: Overall performance statistics aggregated by deck archetype and sub-archetype.
+  columns:
+  - name: archetype
+    description: Primary deck archetype.
     tests:
-      - dbt_utils.unique_combination_of_columns:
-          arguments:
-            combination_of_columns:
-              - tournament_month
-              - archetype
-    columns:
-      - name: tournament_month
-        description: "The month of the tournaments."
-        tests:
-          - not_null
-      - name: archetype
-        description: "Deck archetype."
-        tests:
-          - not_null
-      - name: meta_share
-        description: "Percentage of participants using this archetype in the given month."
-
-  - name: mart_archetype_card_staples
-    description: "Analysis of card inclusion rates and average quantities within each deck archetype."
+    - not_null
+  - name: total_matches
+    description: Total number of matches played by this archetype.
+  - name: wins
+    description: Total wins.
+  - name: win_rate
+    description: Win rate percentage (0-100).
+  - name: source
     tests:
-      - dbt_utils.unique_combination_of_columns:
-          arguments:
-            combination_of_columns:
-              - archetype
-              - card_name
-              - card_kind
-              - card_code
-    columns:
-      - name: archetype
-        description: "Deck archetype."
-        tests:
-          - not_null
-      - name: card_name
-        description: "Name of the card."
-        tests:
-          - not_null
-      - name: inclusion_rate
-        description: "Percentage of decks in this archetype that include the card."
-
-  - name: mart_player_lifetime_stats
-    description: "Aggregated lifetime performance and favorite archetypes for all players."
-    columns:
-      - name: player_name
-        description: "Name of the player."
-        tests:
-          - not_null
-          - unique
-      - name: win_rate
-        description: "Overall win rate across all matches."
-
-  - name: mart_archetype_matchup_suggestions
-    description: "Data-driven card suggestions to improve an archetype's performance against difficult opponents, including quantity analysis and significance filtering."
-    columns:
-      - name: set_name
-        description: "The name of the set or meta period."
-        tests:
-          - not_null
-      - name: archetype
-        description: "The archetype for which suggestions are provided."
-        tests:
-          - not_null
-      - name: opponent_archetype
-        description: "The difficult opponent archetype."
-        tests:
-          - not_null
-      - name: suggested_card
-        description: "The card suggested to improve the matchup."
-        tests:
-          - not_null
-      - name: card_kind
-        description: "Type of card (Pokemon, Trainer, Energy)."
-      - name: sample_size
-        description: "Number of matches in this matchup where the archetype included the card."
-      - name: win_rate_with_card
-        description: "Win rate of the archetype against the opponent when the suggested card is included."
-      - name: win_rate_without_card
-        description: "Win rate of the archetype against the opponent when the suggested card is NOT included."
-      - name: relevance_score
-        description: "Difference between win rate with and without the card."
-      - name: suggested_quantity
-        description: "Average quantity of the card found in winning decks for this matchup."
+    - not_null
+  - name: event_type
+    tests:
+    - not_null
+- name: mart_archetype_matchups
+  description: Head-to-head performance matrix between different archetypes.
+  columns:
+  - name: p1_archetype
+    description: Archetype of the primary player.
+    tests:
+    - not_null
+  - name: p2_archetype
+    description: Archetype of the opponent.
+    tests:
+    - not_null
+  - name: total_matches
+    description: Number of matches recorded for this specific matchup.
+  - name: win_rate
+    description: Win rate of Player 1 against Player 2.
+  - name: source
+    tests:
+    - not_null
+  - name: event_type
+    tests:
+    - not_null
+- name: mart_cards_used
+  description: Aggregation of card usage across all tournament decks.
+  columns:
+  - name: card_name
+    description: Name of the card.
+    tests:
+    - not_null
+  - name: total_used
+    description: Cumulative count of this card across all decks.
+  - name: decks_containing
+    description: Number of unique decks that included at least one copy of this card.
+  - name: source
+    tests:
+    - not_null
+  - name: event_type
+    tests:
+    - not_null
+- name: mart_deck_analysis
+  description: Detailed performance analysis for each participant and their deck.
+  columns:
+  - name: player_name
+    description: Name of the player.
+    tests:
+    - not_null
+  - name: tournament_url
+    description: Link to the tournament standings.
+  - name: win_rate
+    description: Percentage of matches won by this player in the tournament.
+- name: mart_tournament_analysis
+  description: Summary statistics for tournaments, including player counts and match activity.
+  columns:
+  - name: tournament_id
+    description: Unique identifier for the tournament.
+    tests:
+    - unique
+    - not_null
+  - name: tournament_name
+    description: Official name of the tournament.
+  - name: player_count
+    description: Total number of participants recorded.
+- name: mart_monthly_meta_shifts
+  description: Monthly aggregation of deck archetype popularity and performance.
+  tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - tournament_month
+        - source
+        - event_type
+        - archetype
+  columns:
+  - name: tournament_month
+    description: The month of the tournaments.
+    tests:
+    - not_null
+  - name: archetype
+    description: Deck archetype.
+    tests:
+    - not_null
+  - name: meta_share
+    description: Percentage of participants using this archetype in the given month.
+  - name: source
+    tests:
+    - not_null
+  - name: event_type
+    tests:
+    - not_null
+- name: mart_archetype_card_staples
+  description: Analysis of card inclusion rates and average quantities within each deck archetype.
+  tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - set_name
+        - source
+        - event_type
+        - archetype
+        - card_name
+        - card_kind
+  columns:
+  - name: archetype
+    description: Deck archetype.
+    tests:
+    - not_null
+  - name: card_name
+    description: Name of the card.
+    tests:
+    - not_null
+  - name: inclusion_rate
+    description: Percentage of decks in this archetype that include the card.
+  - name: source
+    tests:
+    - not_null
+  - name: event_type
+    tests:
+    - not_null
+- name: mart_player_lifetime_stats
+  description: Aggregated lifetime performance and favorite archetypes for all players.
+  columns:
+  - name: player_name
+    description: Name of the player.
+    tests:
+    - not_null
+    - unique
+  - name: win_rate
+    description: Overall win rate across all matches.
+- name: mart_archetype_matchup_suggestions
+  description: Data-driven card suggestions to improve an archetype's performance against difficult opponents, including quantity
+    analysis and significance filtering.
+  columns:
+  - name: set_name
+    description: The name of the set or meta period.
+    tests:
+    - not_null
+  - name: archetype
+    description: The archetype for which suggestions are provided.
+    tests:
+    - not_null
+  - name: opponent_archetype
+    description: The difficult opponent archetype.
+    tests:
+    - not_null
+  - name: suggested_card
+    description: The card suggested to improve the matchup.
+    tests:
+    - not_null
+  - name: card_kind
+    description: Type of card (Pokemon, Trainer, Energy).
+  - name: sample_size
+    description: Number of matches in this matchup where the archetype included the card.
+  - name: win_rate_with_card
+    description: Win rate of the archetype against the opponent when the suggested card is included.
+  - name: win_rate_without_card
+    description: Win rate of the archetype against the opponent when the suggested card is NOT included.
+  - name: relevance_score
+    description: Difference between win rate with and without the card.
+  - name: suggested_quantity
+    description: Average quantity of the card found in winning decks for this matchup.
+  - name: source
+    tests:
+    - not_null
+  - name: event_type
+    tests:
+    - not_null
+  tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - set_name
+        - source
+        - event_type
+        - archetype
+        - opponent_archetype
+        - suggested_card
+- name: mart_monthly_populations
+  tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - tournament_month
+        - source
+        - event_type
+- name: mart_archetype_deck_populations
+  tests:
+  - dbt_utils.unique_combination_of_columns:
+      arguments:
+        combination_of_columns:
+        - set_name
+        - source
+        - event_type
+        - archetype

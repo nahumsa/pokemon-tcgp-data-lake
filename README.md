@@ -94,8 +94,11 @@ use `0` for ties and `-1` for double losses. Tournament dates use the local cale
 date shown by Labs. The snapshot contains public tournament player names and results.
 Labs standings are calculated outside official tournament software and can contain
 errors. Labs events use their published archetype labels, including newer decks
-absent from the `meta_decks` seed, using the full source label in both archetype
-fields because Labs does not publish the seed's parent/variant hierarchy.
+absent from the `meta_decks` seed. Unambiguous seed labels map to the shared
+parent archetype.
+`sub_archetype` and `source_archetype_label` preserve the published label;
+unknown labels remain their own parent. `classification_method` records whether
+the label was mapped, unmapped, or classified from card rules.
 Other events continue to use the existing
 card-based archetype classifier. Events without published decks have no archetype
 data until Labs publishes it. The local dbt profile does not install network
@@ -127,9 +130,30 @@ where source = 'limitless_labs' and event_type = 'in_person';
 ```
 
 For match-level modeling, join `fct_matches` to `dim_tournaments` on
-`tournament_id` and group/filter using these attributes. Existing aggregate
-archetype marts retain their current grain and combine sources; filtering those
-requires rebuilding the aggregation from the facts with the tournament dimension.
+`tournament_id` and group/filter using these attributes. Aggregate archetype, matchup, card, and monthly marts include `source` and
+`event_type` in their grain. Their semantic models expose both dimensions, so
+online and in-person populations can be filtered separately or deliberately pooled.
+Win rates pool wins and match counts instead of averaging subgroup percentages.
+
+### Semantic query migration
+
+Population totals now have dedicated models: `monthly_populations.total_participants`
+and `archetype_deck_populations.total_archetype_decks`. These count each cohort once,
+including unclassified entrants in monthly populations. The corresponding repeated
+denominator measures were removed from `monthly_meta_shifts` and `card_staples`.
+Monthly `meta_share` and staple `inclusion_rate` are dimensions valid at their full
+cohort/category grain; recompute a share from counts when combining cohorts.
+
+Staples and suggestions combine alternate printings by card name within each deck,
+and suggestions are unique per source, event type, period, and matchup/card.
+`card_staples.card_code` was removed; printing-level analysis remains available in
+`cards_used`, whose deck count uses distinct participant IDs. Deck-card membership
+and suggestion sample counts are additive observations across cards, not unique
+decks or matches: filter to one card when interpreting them as population counts.
+
+This change preserves the existing set-period assignments and player-perspective
+match facts. Legality periods, physical match identity, deck coverage reporting, and
+lifetime player identities remain separate modeling work.
 
 This project uses **uv workspaces** to manage multiple components. When adding dependencies or running commands, you must specify the package name (found in each component's `pyproject.toml`).
 
