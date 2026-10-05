@@ -12,4 +12,4 @@ with latest as (
 select s.participant_id
 from latest as s
 left join {{ ref('dim_deck_archetypes') }} as a on s.participant_id = a.participant_id
-where a.archetype is distinct from s.deck
+where a.source_archetype_label is distinct from s.deck or a.sub_archetype is distinct from s.deck

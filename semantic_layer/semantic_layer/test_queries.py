@@ -7,15 +7,37 @@ from boring_semantic_layer import from_yaml
 # Setup same environment as server
 base_dir: Path = Path(__file__).parent
 yaml_path: Path = base_dir / "boring.yml"
-con: Any = ibis.duckdb.connect(str(base_dir.parent.parent / "pokemon_tcg_pipeline.duckdb"))
+con: Any = ibis.duckdb.connect(
+    str(base_dir.parent.parent / "pokemon_tcg_pipeline.duckdb")
+)
 tables: Dict[str, Any] = {
-    "mart_archetype_stats": con.table("mart_archetype_stats", database="main_consumption"),
-    "mart_monthly_meta_shifts": con.table("mart_monthly_meta_shifts", database="main_consumption"),
-    "mart_archetype_matchups": con.table("mart_archetype_matchups", database="main_consumption"),
-    "mart_cards_used": con.table("mart_cards_used", database="main_consumption"),
-    "mart_archetype_card_staples": con.table("mart_archetype_card_staples", database="main_consumption"),
-    "mart_archetype_matchup_suggestions": con.table("mart_archetype_matchup_suggestions", database="main_consumption"),
-    "mart_tournament_analysis": con.table("mart_tournament_analysis", database="main_consumption"),
+    "mart_archetype_stats": con.table(
+        "mart_archetype_stats", database="main_consumption"
+    ),
+    "mart_monthly_meta_shifts": con.table(
+        "mart_monthly_meta_shifts", database="main_consumption"
+    ),
+    "mart_archetype_matchups": con.table(
+        "mart_archetype_matchups", database="main_consumption"
+    ),
+    "int_classified_deck_cards": con.table(
+        "int_classified_deck_cards", database="main_semantic"
+    ),
+    "mart_monthly_populations": con.table(
+        "mart_monthly_populations", database="main_consumption"
+    ),
+    "mart_archetype_deck_populations": con.table(
+        "mart_archetype_deck_populations", database="main_consumption"
+    ),
+    "mart_archetype_card_staples": con.table(
+        "mart_archetype_card_staples", database="main_consumption"
+    ),
+    "mart_archetype_matchup_suggestions": con.table(
+        "mart_archetype_matchup_suggestions", database="main_consumption"
+    ),
+    "mart_tournament_analysis": con.table(
+        "mart_tournament_analysis", database="main_consumption"
+    ),
     "mart_deck_analysis": con.table("mart_deck_analysis", database="main_consumption"),
     "dim_cards": con.table("dim_cards", database="main_semantic"),
     "fct_matches": con.table("fct_matches", database="main_semantic"),
@@ -68,10 +90,10 @@ run_test(
 run_test(
     "Staples for Dragapult archetype (top 10)",
     "card_staples",
-    dimensions=["card_name"],
-    measures=["avg_inclusion_rate"],
+    dimensions=["set_name", "source", "event_type", "card_name", "inclusion_rate"],
+    measures=["decks_with_card"],
     filters=lambda t: t.archetype == "Dragapult",
-    order_by=[("avg_inclusion_rate", "desc")],
+    order_by=[("decks_with_card", "desc")],
     limit=10,
 )
 

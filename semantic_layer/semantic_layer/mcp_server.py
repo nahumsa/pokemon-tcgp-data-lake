@@ -3,6 +3,7 @@
 MCP Server for the Pokemon TCG Data Lake Semantic Layer.
 Exposes semantic models for archetypes, cards, and matches via Model Context Protocol.
 """
+
 import ibis
 from pathlib import Path
 from typing import Dict, Any
@@ -14,15 +15,37 @@ yaml_path: Path = base_dir / "boring.yml"
 
 # Pre-load tables from specific DuckDB schemas
 # Boring Semantic Layer uses Ibis under the hood
-con: Any = ibis.duckdb.connect(str(base_dir.parent.parent / "pokemon_tcg_pipeline.duckdb"))
+con: Any = ibis.duckdb.connect(
+    str(base_dir.parent.parent / "pokemon_tcg_pipeline.duckdb")
+)
 tables: Dict[str, Any] = {
-    "mart_archetype_stats": con.table("mart_archetype_stats", database="main_consumption"),
-    "mart_monthly_meta_shifts": con.table("mart_monthly_meta_shifts", database="main_consumption"),
-    "mart_archetype_matchups": con.table("mart_archetype_matchups", database="main_consumption"),
-    "mart_cards_used": con.table("mart_cards_used", database="main_consumption"),
-    "mart_archetype_card_staples": con.table("mart_archetype_card_staples", database="main_consumption"),
-    "mart_archetype_matchup_suggestions": con.table("mart_archetype_matchup_suggestions", database="main_consumption"),
-    "mart_tournament_analysis": con.table("mart_tournament_analysis", database="main_consumption"),
+    "mart_archetype_stats": con.table(
+        "mart_archetype_stats", database="main_consumption"
+    ),
+    "mart_monthly_meta_shifts": con.table(
+        "mart_monthly_meta_shifts", database="main_consumption"
+    ),
+    "mart_archetype_matchups": con.table(
+        "mart_archetype_matchups", database="main_consumption"
+    ),
+    "int_classified_deck_cards": con.table(
+        "int_classified_deck_cards", database="main_semantic"
+    ),
+    "mart_monthly_populations": con.table(
+        "mart_monthly_populations", database="main_consumption"
+    ),
+    "mart_archetype_deck_populations": con.table(
+        "mart_archetype_deck_populations", database="main_consumption"
+    ),
+    "mart_archetype_card_staples": con.table(
+        "mart_archetype_card_staples", database="main_consumption"
+    ),
+    "mart_archetype_matchup_suggestions": con.table(
+        "mart_archetype_matchup_suggestions", database="main_consumption"
+    ),
+    "mart_tournament_analysis": con.table(
+        "mart_tournament_analysis", database="main_consumption"
+    ),
     "mart_deck_analysis": con.table("mart_deck_analysis", database="main_consumption"),
     "dim_cards": con.table("dim_cards", database="main_semantic"),
     "fct_matches": con.table("fct_matches", database="main_semantic"),

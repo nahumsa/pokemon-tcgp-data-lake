@@ -1,50 +1,40 @@
-with archetype_decks as (
+with included_cards as (
+    -- One functional card per deck, combining alternate Pokemon printings.
     select
-        participant_id,
-        archetype
-    from {{ ref('dim_deck_archetypes') }}
-),
-
-deck_compositions as (
-    select
+        set_name,
+        source,
+        event_type,
+        archetype,
         participant_id,
         card_name,
-        card_code,
         card_kind,
-        quantity
-    from {{ ref('fct_deck_composition') }}
+        sum(quantity) as quantity
+    from {{ ref('int_classified_deck_cards') }}
+    where archetype is not null
+    group by 1, 2, 3, 4, 5, 6, 7
 ),
 
-archetype_totals as (
+usage as (
     select
+        set_name,
+        source,
+        event_type,
         archetype,
-        count(distinct participant_id) as total_decks
-    from archetype_decks
-    group by 1
-),
-
-card_usage as (
-    select
-        ad.archetype,
-        dc.card_name,
-        dc.card_code,
-        dc.card_kind,
-        count(distinct ad.participant_id) as decks_with_card,
-        avg(dc.quantity) as mean_quantity_when_included
-    from archetype_decks as ad
-    inner join deck_compositions as dc on ad.participant_id = dc.participant_id
-    group by 1, 2, 3, 4
+        card_name,
+        card_kind,
+        count(*) as decks_with_card,
+        sum(quantity) as total_quantity_when_included
+    from included_cards
+    group by 1, 2, 3, 4, 5, 6
 )
 
 select
-    cu.archetype,
-    cu.card_name,
-    cu.card_code,
-    cu.card_kind,
-    cu.decks_with_card,
-    archt.total_decks as total_archetype_decks,
-    round(cu.decks_with_card * 100.0 / archt.total_decks, 2) as inclusion_rate,
-    round(cu.mean_quantity_when_included, 2) as mean_quantity
-from card_usage as cu
-inner join archetype_totals as archt on cu.archetype = archt.archetype
-order by 1 asc, 6 desc
+    u.*,
+    p.total_archetype_decks,
+    round(u.decks_with_card * 100.0 / p.total_archetype_decks, 2) as inclusion_rate,
+    round(u.total_quantity_when_included * 1.0 / u.decks_with_card, 2) as mean_quantity
+from usage as u
+inner join {{ ref('mart_archetype_deck_populations') }} as p
+    on
+        u.set_name = p.set_name and u.source = p.source and u.event_type = p.event_type
+        and u.archetype = p.archetype
