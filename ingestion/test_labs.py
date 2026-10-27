@@ -286,7 +286,7 @@ def test_repeated_deck_imports_are_idempotent_and_replace_only_the_matching_deck
     ]
 
 
-def test_empty_snapshot_does_not_create_sources(labs_pipeline):
+def test_empty_input_does_not_create_sources(labs_pipeline):
     from ingestion import labs
 
     labs.load_rows({table: [] for table in labs.TABLE_KEYS})

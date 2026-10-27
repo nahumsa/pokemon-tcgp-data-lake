@@ -104,6 +104,17 @@ card-based archetype classifier. Events without published decks have no archetyp
 data until Labs publishes it. The local dbt profile does not install network
 extensions; these transformations operate entirely on the local DuckDB tables.
 
+### CI validation
+
+CI tests ingestion and modeling logic with mocked requests, small synthetic inputs,
+and isolated temporary DuckDB databases. The tests are independent of saved
+tournament snapshots and existing pipeline databases. Ruff and dbt parsing check
+code and project configuration without loading tournament data.
+
+The saved snapshot supports reproducible manual analysis. To validate a real-data
+analytics rebuild, use the snapshot reload and dbt commands above; that workflow
+is separate from the CI logic tests.
+
 ## 📦 Monorepo Workflow
 
 ### Tournament source and event setting
