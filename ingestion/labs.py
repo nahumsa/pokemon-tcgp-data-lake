@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 import dlt
+from dlt.common.schema.utils import new_table
 
 from .constants import (
     PARTICIPANT_DECK_PRIMARY_KEY,
@@ -214,8 +215,65 @@ def load_rows(rows):
                     write_disposition="merge",
                     primary_key=key,
                     loader_file_format="jsonl",
+                    columns={"deck": {"data_type": "text"}}
+                    if table == TOURNAMENT_PARTICIPANTS_TABLE
+                    else None,
                 )
             )
+    if not rows[PARTICIPANT_DECK_TABLE] and any(rows.values()):
+        # Keep dbt's sources available before any decklists are published.
+        # Schema synchronization creates empty tables, never placeholder rows.
+        schema = pipeline.default_schema
+        for table, parent, columns in (
+            (
+                PARTICIPANT_DECK_TABLE,
+                None,
+                {
+                    "player": "text",
+                    "tournament": "text",
+                    "decklist_link": "text",
+                    "_dlt_id": "text",
+                    "_dlt_load_id": "text",
+                },
+            ),
+            (
+                f"{PARTICIPANT_DECK_TABLE}__decklist",
+                PARTICIPANT_DECK_TABLE,
+                {
+                    "name": "text",
+                    "code": "text",
+                    "kind": "text",
+                    "quantity": "bigint",
+                    "_dlt_id": "text",
+                    "_dlt_parent_id": "text",
+                    "_dlt_root_id": "text",
+                    "_dlt_list_idx": "bigint",
+                },
+            ),
+        ):
+            if table not in schema.tables:
+                table_schema = new_table(
+                    table,
+                    parent_table_name=parent,
+                    write_disposition=None if parent else "merge",
+                    columns=[
+                        {"name": name, "data_type": data_type}
+                        for name, data_type in columns.items()
+                    ],
+                )
+                for name, column in table_schema["columns"].items():
+                    if name.startswith("_dlt_"):
+                        column["nullable"] = False
+                    if name == "_dlt_id":
+                        column["unique"] = True
+                    elif name == "_dlt_root_id":
+                        column["root_key"] = True
+                    elif name == "_dlt_parent_id":
+                        column["foreign_key"] = True
+                    elif not parent and name in PARTICIPANT_DECK_PRIMARY_KEY:
+                        column.update(primary_key=True, nullable=False)
+                schema.update_table(table_schema)
+        pipeline.sync_schema()
 
 
 def main():
