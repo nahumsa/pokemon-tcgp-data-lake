@@ -185,31 +185,105 @@ def test_no_deck_import_preserves_existing_source_schemas(labs_pipeline):
     assert schema.tables == before
 
 
-def test_published_deck_import_keeps_merge_keys_without_empty_schema_setup(
-    labs_pipeline,
+def test_repeated_deck_imports_are_idempotent_and_replace_only_the_matching_deck(
+    tmp_path,
+    monkeypatch,
 ):
+    from copy import deepcopy
+    from itertools import count
+    from types import SimpleNamespace
+
+    import dlt
+    import duckdb
+
     from ingestion import labs
 
-    rows = {table: [] for table in labs.TABLE_KEYS}
-    rows[labs.PARTICIPANT_DECK_TABLE] = [
-        deck_row(
-            {"name": "Alex", "tp_id": 1},
+    monkeypatch.setenv("RUNTIME__DLTHUB_TELEMETRY", "false")
+    monkeypatch.setenv("NORMALIZE__WORKERS", "1")
+    monkeypatch.setenv("LOAD__WORKERS", "1")
+    database = tmp_path / "ingestion.duckdb"
+    duckdb.connect(str(database)).close()
+    sessions = count()
+
+    def import_pipeline(**kwargs):
+        # Each import is a fresh session against the same persisted database.
+        return dlt.pipeline(
+            pipeline_name="deck_merge_regression",
+            pipelines_dir=str(tmp_path / f"session_{next(sessions)}"),
+            destination=dlt.destinations.duckdb(str(database)),
+            dataset_name=labs.PIPELINE_DATASET_NAME,
+        )
+
+    monkeypatch.setattr(labs, "dlt", SimpleNamespace(pipeline=import_pipeline))
+
+    def make_deck(name, player_id, event, quantities):
+        return deck_row(
+            {"name": name, "tp_id": player_id},
             {
                 "energy": [
-                    {"name": "Psychic Energy", "set": "MEE", "number": "5", "count": 60}
+                    {
+                        "name": card,
+                        "set": "MEE",
+                        "number": str(index),
+                        "count": quantity,
+                    }
+                    for index, (card, quantity) in enumerate(
+                        quantities.items(), start=1
+                    )
                 ]
             },
-            "0001",
-            "labs/event",
+            event,
+            f"labs/{event}",
         )
+
+    def import_decks(decks):
+        rows = {table: [] for table in labs.TABLE_KEYS}
+        rows[labs.PARTICIPANT_DECK_TABLE] = deepcopy(decks)
+        labs.load_rows(rows)
+
+    def stored_decks():
+        with duckdb.connect(str(database), read_only=True) as con:
+            assert (
+                con.execute(
+                    "select count(*) from pokemon_tcg_data.participant_deck"
+                ).fetchone()[0]
+                == 3
+            )
+            cards = con.execute("""
+                select d.tournament, d.player, c.name, c.quantity
+                from pokemon_tcg_data.participant_deck as d
+                join pokemon_tcg_data.participant_deck__decklist as c
+                    on c._dlt_parent_id = d._dlt_id
+                order by 1, 2, 3
+            """).fetchall()
+            assert con.execute(
+                "select count(*) from pokemon_tcg_data.participant_deck__decklist"
+            ).fetchone()[0] == len(cards)
+            return cards
+
+    initial = [
+        make_deck("Alex", 1, "event1", {"Psychic Energy": 40, "Water Energy": 20}),
+        make_deck("Alex", 1, "event2", {"Fire Energy": 60}),
+        make_deck("Blake", 2, "event1", {"Water Energy": 60}),
     ]
-    labs.load_rows(rows)
-    call = labs_pipeline.run.call_args
-    assert call.args[0] == rows[labs.PARTICIPANT_DECK_TABLE]
-    assert call.kwargs["table_name"] == labs.PARTICIPANT_DECK_TABLE
-    assert call.kwargs["primary_key"] == ["tournament", "player"]
-    assert call.kwargs["write_disposition"] == "merge"
-    labs_pipeline.sync_schema.assert_not_called()
+    expected = [
+        ("labs/event1", "Alex", "Psychic Energy", 40),
+        ("labs/event1", "Alex", "Water Energy", 20),
+        ("labs/event1", "Blake", "Water Energy", 60),
+        ("labs/event2", "Alex", "Fire Energy", 60),
+    ]
+    import_decks(initial)
+    assert stored_decks() == expected
+    import_decks(initial)
+    assert stored_decks() == expected
+
+    # A changed deck removes its former child rows, preserving both merge keys.
+    import_decks([make_deck("Alex", 1, "event1", {"Grass Energy": 60})])
+    assert stored_decks() == [
+        ("labs/event1", "Alex", "Grass Energy", 60),
+        ("labs/event1", "Blake", "Water Energy", 60),
+        ("labs/event2", "Alex", "Fire Energy", 60),
+    ]
 
 
 def test_empty_snapshot_does_not_create_sources(labs_pipeline):
