@@ -36,5 +36,5 @@ select
 from usage as u
 inner join {{ ref('mart_archetype_deck_populations') }} as p
     on
-        u.set_name = p.set_name and u.source = p.source and u.event_type = p.event_type
+        u.set_name is not distinct from p.set_name and u.source = p.source and u.event_type = p.event_type
         and u.archetype = p.archetype
