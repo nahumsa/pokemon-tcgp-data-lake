@@ -4,7 +4,6 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    branches: ["main"]
 
 jobs:
   dbt-ci:
@@ -44,8 +43,8 @@ jobs:
       - name: Lint with Ruff
         run: uv run ruff check .
 
-      - name: Test Labs importer
-        run: uv run pytest ingestion/test_labs.py -q
+      - name: Test ingestion and modeling regressions
+        run: uv run pytest ingestion/test_labs.py tests/test_modeling_regressions.py -q
 
       - name: Build and test analytics
         run: |
