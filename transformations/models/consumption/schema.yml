@@ -32,8 +32,10 @@ models:
     - not_null
   - name: total_matches
     description: Number of matches recorded for this specific matchup.
-  - name: win_rate
-    description: Win rate of Player 1 against Player 2.
+  - name: win_no_ties_rate
+    description: Wins / recorded player-results as a percentage (0-100); ties remain in the denominator.
+  - name: win_ties_rate
+    description: (Wins + ties) / recorded player-results as a percentage (0-100).
   - name: source
     tests:
     - not_null
@@ -67,7 +69,7 @@ models:
   - name: tournament_url
     description: Link to the tournament standings.
   - name: win_rate
-    description: Percentage of matches won by this player in the tournament.
+    description: Wins / recorded player-results as a percentage (0-100), including ties in the denominator; null without results.
 - name: mart_tournament_analysis
   description: Summary statistics for tournaments, including player counts and match activity.
   columns:

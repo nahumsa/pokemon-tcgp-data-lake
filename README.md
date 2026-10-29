@@ -149,6 +149,12 @@ Win rates pool wins and match counts instead of averaging subgroup percentages.
 
 ### Semantic query migration
 
+See the [metric contract](semantic_layer/docs/metrics.md) for formulas, aggregation
+grains, denominator populations, draw treatment, and regression checks. All exposed
+rates now use percentages (0–100), including `deck_analysis.avg_win_rate` (previously
+0–1). Zero denominators return null. Existing `avg_` names denote pooled count
+ratios, not averages of percentages.
+
 Population totals now have dedicated models: `monthly_populations.total_participants`
 and `archetype_deck_populations.total_archetype_decks`. These count each cohort once,
 including unclassified entrants in monthly populations. The corresponding repeated

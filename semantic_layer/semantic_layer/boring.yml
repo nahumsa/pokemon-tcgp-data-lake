@@ -34,7 +34,7 @@ archetype_stats:
       description: Total ties.
     avg_win_rate:
       expr: _.wins.sum() * 100.0 / _.total_matches.sum().nullif(0)
-      description: Pooled win percentage from wins and player-result counts, not an average of percentages.
+      description: Pooled wins / recorded player-results, as a percentage (0-100); ties stay in the denominator. Null with no results.
 monthly_meta_shifts:
   table: mart_monthly_meta_shifts
   database: main_consumption
@@ -68,7 +68,7 @@ monthly_meta_shifts:
       description: Total wins by this archetype in the month.
     avg_win_rate:
       expr: _.wins.sum() * 100.0 / _.total_matches.sum().nullif(0)
-      description: Average win rate percentage (0-100).
+      description: Pooled wins / recorded player-results, as a percentage (0-100); ties stay in the denominator. Null with no results.
 archetype_matchups:
   table: mart_archetype_matchups
   database: main_consumption
@@ -110,10 +110,10 @@ archetype_matchups:
       description: Ties for the primary player's archetype.
     win_ties_rate:
       expr: (_.wins.sum() + _.ties.sum()) * 100.0 / _.total_matches.sum().nullif(0)
-      description: Win-or-tie rate percentage (0-100) for the primary archetype against the opponent.
+      description: Pooled (wins + ties) / recorded player-results, as a percentage (0-100). Null with no results.
     win_no_ties_rate:
       expr: _.wins.sum() * 100.0 / _.total_matches.sum().nullif(0)
-      description: Win-only rate percentage (0-100) for the primary archetype against the opponent.
+      description: Pooled wins / recorded player-results, as a percentage (0-100); ties stay in the denominator. Null with no results.
 cards_used:
   table: int_classified_deck_cards
   database: main_semantic
@@ -208,18 +208,20 @@ matchup_suggestions:
     sample_size:
       expr: _.sample_size.sum()
       description: Card-match observations; group/filter to one suggested card to count matches.
+    # Bracket access keeps these as Ibis count expressions; BSL 0.3.7 cannot
+    # hash nullif post-operations on its inferred calculated-measure nodes.
     avg_win_rate_with_card:
-      expr: _.wins_with_card.sum() * 100.0 / _.sample_size.sum()
-      description: Average win rate with the suggested card.
+      expr: _["wins_with_card"].sum() * 100.0 / _["sample_size"].sum().nullif(0)
+      description: Pooled wins with card / card-match observations, percentage (0-100); ties count as non-wins. Null with no observations.
     avg_win_rate_without_card:
-      expr: _.wins_without_card.sum() * 100.0 / _.matches_without_card.sum()
-      description: Average win rate without the suggested card.
+      expr: _["wins_without_card"].sum() * 100.0 / _["matches_without_card"].sum().nullif(0)
+      description: Pooled wins without card / without-card observations, percentage (0-100); ties count as non-wins. Null with no observations.
     avg_relevance_score:
-      expr: (_.wins_with_card.sum() * 100.0 / _.sample_size.sum()) - (_.wins_without_card.sum() * 100.0 / _.matches_without_card.sum())
-      description: Average win-rate lift from including the suggested card.
+      expr: (_["wins_with_card"].sum() * 100.0 / _["sample_size"].sum().nullif(0)) - (_["wins_without_card"].sum() * 100.0 / _["matches_without_card"].sum().nullif(0))
+      description: Difference of pooled with-card and without-card win percentages, in percentage points. Null if either group has no observations.
     avg_suggested_quantity:
-      expr: _.quantity_in_wins.sum() * 1.0 / _.wins_with_card.sum()
-      description: Average quantity found in winning decks for this matchup.
+      expr: _["quantity_in_wins"].sum() * 1.0 / _["wins_with_card"].sum().nullif(0)
+      description: Pooled card copies in wins / winning card-match observations; null with no wins. Repeated winning matches weight a deck more than once.
 tournament_analysis:
   table: mart_tournament_analysis
   database: main_consumption
@@ -291,8 +293,8 @@ deck_analysis:
       expr: _.ties.sum()
       description: Player ties.
     avg_win_rate:
-      expr: _.wins.sum() * 1.0 / _.total_matches.sum().nullif(0)
-      description: Pooled win fraction (0-1) from wins and player-result counts.
+      expr: _.wins.sum() * 100.0 / _.total_matches.sum().nullif(0)
+      description: Pooled wins / recorded player-results, as a percentage (0-100); ties stay in the denominator. Null with no results.
 cards:
   table: dim_cards
   database: main_semantic
