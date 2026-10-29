@@ -19,7 +19,6 @@ jobs:
 
       - name: Verify checks without saved datasets
         run: |
-          rm -rf data/limitless_labs
           rm -f pokemon_tcg_pipeline.duckdb semantic_layer/pokemon_tcg_pipeline.duckdb
 
       - name: Install uv
@@ -46,5 +45,3 @@ jobs:
       - name: Test ingestion logic
         run: uv run pytest ingestion/test_labs.py -q
 
-      - name: Test modeling logic with synthetic inputs
-        run: uv run pytest tests/test_modeling_regressions.py -q

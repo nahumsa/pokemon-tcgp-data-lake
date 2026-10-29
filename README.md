@@ -76,7 +76,7 @@ decklists do not exclude players from the participant dimension.
 # Fetch, save a reproducible snapshot, and merge into the local DuckDB database
 uv run --package pokemon-tcg-ingestion python -m ingestion.labs --latest 3 --snapshot data/limitless_labs/latest.json.gz
 
-# Reload the checked-in snapshot without fetching from Labs
+# Reload a snapshot you previously saved locally without fetching from Labs
 uv run --package pokemon-tcg-ingestion python -m ingestion.labs --from-snapshot data/limitless_labs/latest.json.gz
 
 cd transformations
@@ -91,7 +91,8 @@ the same event without overwriting Play records. Duplicate player names within a
 event receive a `[Labs <participant id>]` suffix in the existing name-based keys;
 their original names and source IDs remain in the raw standings table. Pairings
 use `0` for ties and `-1` for double losses. Tournament dates use the local calendar
-date shown by Labs. The snapshot contains public tournament player names and results.
+date shown by Labs. Locally saved snapshots contain public tournament player names
+and results and are not committed to the repository.
 Labs standings are calculated outside official tournament software and can contain
 errors. Labs events use their published archetype labels, including newer decks
 absent from the `meta_decks` seed. Unambiguous seed labels map to the shared
@@ -106,14 +107,14 @@ extensions; these transformations operate entirely on the local DuckDB tables.
 
 ### CI validation
 
-CI tests ingestion and modeling logic with mocked requests, small synthetic inputs,
-and isolated temporary DuckDB databases. The tests are independent of saved
-tournament snapshots and existing pipeline databases. Ruff and dbt parsing check
-code and project configuration without loading tournament data.
+CI tests ingestion logic with mocked requests, small synthetic inputs, and
+isolated temporary DuckDB databases. The tests are independent of saved tournament
+snapshots and existing pipeline databases. Ruff and dbt parsing check code and
+project configuration without loading tournament data.
 
-The saved snapshot supports reproducible manual analysis. To validate a real-data
-analytics rebuild, use the snapshot reload and dbt commands above; that workflow
-is separate from the CI logic tests.
+To validate a real-data analytics rebuild, fetch the latest events or reload a
+locally saved snapshot, then run the dbt commands above. This workflow is separate
+from the CI ingestion tests.
 
 ## 📦 Monorepo Workflow
 
@@ -227,6 +228,7 @@ uv run sqlfluff lint models
 
 ### CI/CD
 
-Our GitHub Actions pipeline (`.github/workflows/ci.yml`) automatically runs SQL and Python linting on every push to `main`.
+Our GitHub Actions pipeline (`.github/workflows/ci.yml`) runs Ruff, dbt project parsing, and ingestion tests on pull requests and pushes to `main`.
 
 ---
+
