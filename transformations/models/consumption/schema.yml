@@ -69,7 +69,7 @@ models:
   - name: win_rate
     description: Percentage of matches won by this player in the tournament.
 - name: mart_tournament_analysis
-  description: Summary statistics for tournaments, including player counts and match activity.
+  description: Tournament summary with observed unique pairings, player-record counts, and reconciliation coverage.
   columns:
   - name: tournament_id
     description: Unique identifier for the tournament.
@@ -80,6 +80,24 @@ models:
     description: Official name of the tournament.
   - name: player_count
     description: Total number of participants recorded.
+  - name: total_matches
+    description: Deprecated compatibility alias for perspective_record_count; not a unique-match total.
+  - name: perspective_record_count
+    description: Player-result records including byes and unresolved records.
+  - name: unique_match_count
+    description: Observed played pairings with reliable identities; excludes byes and unresolved pairings, not an event completeness guarantee.
+  - name: mirrored_match_count
+    description: Identified pairings with records for both players.
+  - name: one_sided_match_count
+    description: Identified pairings with a record for only one known player.
+  - name: bye_record_count
+    description: Explicit BYE records, not played matches.
+  - name: unresolved_perspective_record_count
+    description: Player records excluded from unique match counts because their pairing or round is unresolved.
+  - name: conflicting_outcome_match_count
+    description: Identified pairings with conflicting outcomes; still included in unique_match_count.
+  - name: incomplete_outcome_match_count
+    description: Identified pairings with missing/unrecognized outcomes; still included in unique_match_count.
 - name: mart_monthly_meta_shifts
   description: Monthly aggregation of deck archetype popularity and performance.
   tests:

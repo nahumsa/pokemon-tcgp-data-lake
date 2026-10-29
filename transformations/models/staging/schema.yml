@@ -44,7 +44,7 @@ models:
                 values: ["pokemon", "trainer", "energy"]
 
   - name: stg_matches
-    description: Staged match data.
+    description: Staged player-perspective results; match_id identifies a player/event/raw-round record.
     columns:
       - name: match_id
         tests:

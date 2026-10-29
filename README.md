@@ -147,6 +147,18 @@ For match-level modeling, join `fct_matches` to `dim_tournaments` on
 online and in-person populations can be filtered separately or deliberately pooled.
 Win rates pool wins and match counts instead of averaging subgroup percentages.
 
+### Tournament match counts
+
+Use `tournament_analysis.unique_match_count` for observed played pairings and
+`perspective_record_count` for player-result records. Mirrored histories count as
+one pairing; one-sided histories remain countable when both players and the round
+are known. Byes and unresolved pairings are disclosed separately. Event totals
+also expose duplicate records and conflicting/incomplete outcomes. These are
+observed counts, not a guarantee that all event histories were imported.
+
+See the [match-count contract](transformations/docs/match_counts.md) for identity,
+normalization, coverage, compatibility aliases, and rebuild instructions.
+
 ### Semantic query migration
 
 Population totals now have dedicated models: `monthly_populations.total_participants`
@@ -164,8 +176,9 @@ and suggestion sample counts are additive observations across cards, not unique
 decks or matches: filter to one card when interpreting them as population counts.
 
 This change preserves the existing set-period assignments and player-perspective
-match facts. Legality periods, physical match identity, deck coverage reporting, and
-lifetime player identities remain separate modeling work.
+match facts. Legality periods, deck coverage reporting, and lifetime player
+identities remain separate modeling work. Unique played-match identity and reconciliation coverage
+are documented in the match-count contract above.
 
 This project uses **uv workspaces** to manage multiple components. When adding dependencies or running commands, you must specify the package name (found in each component's `pyproject.toml`).
 
