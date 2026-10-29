@@ -1,58 +1,41 @@
-with participants as (
+with archetype_monthly_counts as (
     select
-        p.participant_id,
-        p.tournament_id,
-        da.archetype,
-        t.tournament_date,
-        date_trunc('month', t.tournament_date) as tournament_month
+        t.source,
+        t.event_type,
+        a.archetype,
+        date_trunc('month', t.tournament_date) as tournament_month,
+        count(distinct p.participant_id) as archetype_participants
     from {{ ref('dim_participants') }} as p
     inner join {{ ref('dim_tournaments') }} as t on p.tournament_id = t.tournament_id
-    left join {{ ref('dim_deck_archetypes') }} as da on p.participant_id = da.participant_id
-),
-
-monthly_totals as (
-    select
-        tournament_month,
-        count(distinct participant_id) as total_participants
-    from participants
-    group by 1
-),
-
-archetype_monthly_counts as (
-    select
-        tournament_month,
-        archetype,
-        count(distinct participant_id) as archetype_participants
-    from participants
-    group by 1, 2
+    inner join {{ ref('dim_deck_archetypes') }} as a on p.participant_id = a.participant_id
+    group by 1, 2, 3, 4
 ),
 
 match_stats as (
     select
-        da.archetype,
+        t.source,
+        t.event_type,
+        a.archetype,
         date_trunc('month', t.tournament_date) as tournament_month,
         count(*) as total_matches,
         sum(case when m.result = 'WIN' then 1 else 0 end) as wins
     from {{ ref('fct_matches') }} as m
     inner join {{ ref('dim_tournaments') }} as t on m.tournament_id = t.tournament_id
-    inner join {{ ref('dim_deck_archetypes') }} as da on m.participant_id = da.participant_id
-    group by 1, 2
+    inner join {{ ref('dim_deck_archetypes') }} as a on m.participant_id = a.participant_id
+    group by 1, 2, 3, 4
 )
 
 select
-    amc.tournament_month,
-    amc.archetype,
-    amc.archetype_participants,
-    mt.total_participants,
-    coalesce(ms.total_matches, 0) as total_matches,
-    coalesce(ms.wins, 0) as wins,
-    round(amc.archetype_participants * 100.0 / mt.total_participants, 2) as meta_share,
-    round(coalesce(ms.wins, 0) * 100.0 / nullif(ms.total_matches, 0), 2) as win_rate
-from archetype_monthly_counts as amc
-inner join monthly_totals as mt on amc.tournament_month = mt.tournament_month
-left join match_stats as ms
+    a.*,
+    p.total_participants,
+    coalesce(m.total_matches, 0) as total_matches,
+    coalesce(m.wins, 0) as wins,
+    round(a.archetype_participants * 100.0 / p.total_participants, 2) as meta_share,
+    round(coalesce(m.wins, 0) * 100.0 / nullif(m.total_matches, 0), 2) as win_rate
+from archetype_monthly_counts as a
+inner join {{ ref('mart_monthly_populations') }} as p
+    on a.tournament_month = p.tournament_month and a.source = p.source and a.event_type = p.event_type
+left join match_stats as m
     on
-        amc.tournament_month = ms.tournament_month
-        and amc.archetype = ms.archetype
-where amc.archetype is not null
-order by 1 desc, 7 desc
+        a.tournament_month = m.tournament_month and a.source = m.source and a.event_type = m.event_type
+        and a.archetype = m.archetype

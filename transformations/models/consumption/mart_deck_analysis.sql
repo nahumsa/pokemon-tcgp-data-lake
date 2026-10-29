@@ -24,6 +24,8 @@ sets as (
 tournaments_with_sets as (
     select
         t.tournament_id,
+        t.source,
+        t.event_type,
         s.set_name
     from tournaments as t
     left join sets as s
@@ -35,6 +37,8 @@ select
     ts.set_name,
     p.player_name,
     p.tournament_url,
+    ts.source,
+    ts.event_type,
     m.total_matches,
     m.wins,
     m.losses,

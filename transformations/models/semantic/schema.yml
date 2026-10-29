@@ -51,6 +51,20 @@ models:
   - name: dim_tournaments
     description: "Dimension table containing tournament details."
     columns:
+      - name: source
+        description: "Data provider, independent of the event setting."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["limitless_play", "limitless_labs", "unknown"]
+      - name: event_type
+        description: "Event setting. Explicit ingestion metadata overrides legacy URL defaults."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["online", "in_person", "unknown"]
       - name: tournament_id
         description: "Unique surrogate key for the tournament."
         tests:

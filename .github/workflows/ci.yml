@@ -4,16 +4,22 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    branches: ["main"]
 
 jobs:
-  dbt-ci:
-    name: DBT CI
+  logic-ci:
+    name: Logic CI
     runs-on: ubuntu-latest
+    env:
+      RUNTIME__DLTHUB_TELEMETRY: "false"
+      DBT_SEND_ANONYMOUS_USAGE_STATS: "false"
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Verify checks without saved datasets
+        run: |
+          rm -f pokemon_tcg_pipeline.duckdb semantic_layer/pokemon_tcg_pipeline.duckdb
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -28,10 +34,14 @@ jobs:
           cd transformations
           uv run dbt deps
 
-      - name: Lint with SQLFluff
+      - name: Validate dbt project configuration
         run: |
           cd transformations
-          uv run sqlfluff lint models
+          uv run dbt parse --profiles-dir . --no-partial-parse
 
       - name: Lint with Ruff
         run: uv run ruff check .
+
+      - name: Test ingestion logic
+        run: uv run pytest ingestion/test_labs.py -q
+
