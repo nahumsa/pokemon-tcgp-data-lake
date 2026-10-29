@@ -136,16 +136,20 @@ def build(con, name):
 
 
 def test_population_totals_are_not_repeated_across_categories(con):
-    # Three entrants, one unclassified. Two decks, two cards, and two printings
-    # of Tech in the first deck: membership must count that deck only once.
+    # Three January entrants and five February entrants, one unclassified each.
+    # Only January has published cards: two decks, two cards, and two printings
+    # of Tech in the first deck. Membership must count that deck only once.
     con.raw_sql("""
         create table dim_participants as select * from (values
-            ('p1', 'e1'), ('p2', 'e1'), ('p3', 'e1')
+            ('p1', 'e1'), ('p2', 'e1'), ('p3', 'e1'),
+            ('p4', 'e2'), ('p5', 'e2'), ('p6', 'e2'), ('p7', 'e2'), ('p8', 'e2')
         ) t(participant_id, tournament_id);
-        create table dim_tournaments as select 'e1' as tournament_id,
-            date '2026-01-01' as tournament_date, 'play' as source, 'online' as event_type;
+        create table dim_tournaments as select *, 'play' as source, 'online' as event_type
+        from (values ('e1', date '2026-01-01'), ('e2', date '2026-02-01'))
+            t(tournament_id, tournament_date);
         create table dim_deck_archetypes as select * from (values
-            ('p1', 'Deck A'), ('p2', 'Deck B')
+            ('p1', 'Deck A'), ('p2', 'Deck B'), ('p4', 'Deck A'),
+            ('p5', 'Deck A'), ('p6', 'Deck B'), ('p7', 'Deck B')
         ) t(participant_id, archetype);
         create table fct_matches as select 'p1' as participant_id,
             'e1' as tournament_id, 'WIN' as result;
@@ -164,7 +168,7 @@ def test_population_totals_are_not_repeated_across_categories(con):
     ):
         build(con, name)
     for name, measure, expected in (
-        ("monthly_populations", "total_participants", 3),
+        ("monthly_populations", "total_participants", 8),
         ("archetype_deck_populations", "total_archetype_decks", 2),
     ):
         config = CONFIG[name]
@@ -172,15 +176,28 @@ def test_population_totals_are_not_repeated_across_categories(con):
             {name: config}, tables={config["table"]: con.table(config["table"])}
         )[name]
         assert value(semantic_model, measure) == expected
-    assert (
-        con.raw_sql(
-            "select sum(archetype_participants) from mart_monthly_meta_shifts"
-        ).fetchone()[0]
-        == 2
-    )
-    assert con.raw_sql(
-        "select meta_share from mart_monthly_meta_shifts limit 1"
-    ).fetchone()[0] == pytest.approx(33.33)
+    assert con.raw_sql("""
+        select strftime(tournament_month, '%Y-%m'), total_participants
+        from mart_monthly_populations order by tournament_month
+    """).fetchall() == [("2026-01", 3), ("2026-02", 5)]
+    assert con.raw_sql("""
+        select strftime(tournament_month, '%Y-%m'), archetype,
+            archetype_participants, meta_share
+        from mart_monthly_meta_shifts order by tournament_month, archetype
+    """).fetchall() == [
+        ("2026-01", "Deck A", 1, 33.33),
+        ("2026-01", "Deck B", 1, 33.33),
+        ("2026-02", "Deck A", 2, 40.0),
+        ("2026-02", "Deck B", 2, 40.0),
+    ]
+    # Pool counts across months; do not average monthly percentages or repeat
+    # the population once for each archetype.
+    assert con.raw_sql("""
+        select 100.0 * (
+            select sum(archetype_participants) from mart_monthly_meta_shifts
+            where archetype = 'Deck A'
+        ) / (select sum(total_participants) from mart_monthly_populations)
+    """).fetchone()[0] == pytest.approx(37.5)
     assert con.raw_sql("""
         select decks_with_card, total_quantity_when_included, inclusion_rate
         from mart_archetype_card_staples where archetype='Deck A' and card_name='Tech'
