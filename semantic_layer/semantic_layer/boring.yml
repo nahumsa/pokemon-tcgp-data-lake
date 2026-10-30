@@ -256,7 +256,34 @@ tournament_analysis:
       description: Number of players in the tournament.
     total_matches:
       expr: _.total_matches.sum()
-      description: Total recorded matches in the tournament.
+      description: Deprecated alias for perspective_record_count; counts player records, including byes and unresolved records, not unique matches.
+    perspective_record_count:
+      expr: _.perspective_record_count.sum()
+      description: Number of staged player-result records, including byes and unresolved records.
+    unique_match_count:
+      expr: _.unique_match_count.sum()
+      description: Observed unique played pairings with known players and rounds; excludes byes and unresolved pairings. Not a completeness guarantee.
+    mirrored_match_count:
+      expr: _.mirrored_match_count.sum()
+      description: Unique played pairings with histories for both players.
+    one_sided_match_count:
+      expr: _.one_sided_match_count.sum()
+      description: Unique played pairings with history for only one of the two known players.
+    bye_record_count:
+      expr: _.bye_record_count.sum()
+      description: Player records explicitly marked BYE; excluded from unique played matches.
+    unresolved_perspective_record_count:
+      expr: _.unresolved_perspective_record_count.sum()
+      description: Player records without a reliable played-match identity; inspect tournament_matches.resolution_reason.
+    duplicate_perspective_record_count:
+      expr: _.duplicate_perspective_record_count.sum()
+      description: Extra records for the same player within a reconciled group, including normalized-round duplicates.
+    conflicting_outcome_match_count:
+      expr: _.conflicting_outcome_match_count.sum()
+      description: Identified played pairings with contradictory outcomes. Included in unique_match_count; original outcomes are preserved.
+    incomplete_outcome_match_count:
+      expr: _.incomplete_outcome_match_count.sum()
+      description: Identified played pairings with at least one missing or unrecognized outcome. Included in unique_match_count.
 deck_analysis:
   table: mart_deck_analysis
   database: main_consumption
@@ -313,11 +340,11 @@ cards:
 matches:
   table: fct_matches
   database: main_semantic
-  description: Granular match results for individual participants. Use for drilldowns and raw match counts.
+  description: Player-perspective result records. Preserve these for player/archetype statistics; use tournament_matches for unique played pairings.
   dimensions:
     match_id:
       expr: _.match_id
-      description: Unique identifier for the match.
+      description: Identifier for a player/event/raw-round record, not a unique played match.
     participant_id:
       expr: _.participant_id
       description: Primary player participant identifier.
@@ -337,9 +364,12 @@ matches:
       expr: _.round
       description: Tournament round number.
   measures:
+    perspective_record_count:
+      expr: _.count()
+      description: Player-perspective record count, including byes and unresolved records.
     match_count:
       expr: _.count()
-      description: Count of matches.
+      description: Compatibility alias for perspective_record_count; includes byes and unresolved records, not unique played matches.
 monthly_populations:
   table: mart_monthly_populations
   database: main_consumption
@@ -374,3 +404,47 @@ archetype_deck_populations:
     total_archetype_decks:
       expr: _.total_archetype_decks.sum()
       description: Published classified tournament decks, counted once per cohort.
+
+tournament_matches:
+  table: fct_tournament_matches
+  database: main_semantic
+  description: Reconciled observed pairings and unresolved record groups. Filter resolution_reason to resolved for played matches; byes are not played matches. Source coverage may be incomplete.
+  dimensions:
+    match_group_id:
+      expr: _.match_group_id
+      description: Stable reconciliation group ID, including fallback groups for unresolved records and byes.
+    canonical_match_id:
+      expr: _.canonical_match_id
+      description: Event/normalized-round/unordered-player-pair identity; null for byes or unresolved pairings.
+    tournament_id:
+      expr: _.tournament_id
+    round_key:
+      expr: _.round_key
+      description: Normalized round, retaining named phase labels.
+    player_low_id:
+      expr: _.player_low_id
+    player_high_id:
+      expr: _.player_high_id
+    resolution_reason:
+      expr: _.resolution_reason
+      description: resolved, bye, missing_round, unknown_player, unknown_opponent, self_pairing, or conflicting_pairing.
+    history_status:
+      expr: _.history_status
+      description: mirrored, one_sided, bye, or unresolved.
+    outcome_status:
+      expr: _.outcome_status
+      description: consistent, double_loss, one_sided, conflicting, incomplete, unresolved, or not_applicable. Contradictions never rewrite player results.
+    low_player_result:
+      expr: _.low_player_result
+    high_player_result:
+      expr: _.high_player_result
+  measures:
+    unique_match_count:
+      expr: _.canonical_match_id.count()
+      description: Observed identified played pairings; excludes byes/unresolved groups. Includes pairings with flagged outcome problems.
+    perspective_record_count:
+      expr: _.perspective_record_count.sum()
+      description: Contributing player records, including duplicates, byes, and unresolved records.
+    duplicate_perspective_record_count:
+      expr: _.duplicate_perspective_record_count.sum()
+      description: Extra player records within a reconciliation group.

@@ -109,8 +109,9 @@ extensions; these transformations operate entirely on the local DuckDB tables.
 
 CI tests ingestion logic with mocked requests, small synthetic inputs, and
 isolated temporary DuckDB databases. The tests are independent of saved tournament
-snapshots and existing pipeline databases. Ruff and dbt parsing check code and
-project configuration without loading tournament data.
+snapshots and existing pipeline databases. Native dbt unit tests validate match reconciliation and event counts with mocked
+parent models in an in-memory DuckDB database. Ruff and dbt parsing check code
+and project configuration without loading tournament data.
 
 To validate a real-data analytics rebuild, fetch the latest events or reload a
 locally saved snapshot, then run the dbt commands above. This workflow is separate
@@ -147,6 +148,18 @@ For match-level modeling, join `fct_matches` to `dim_tournaments` on
 online and in-person populations can be filtered separately or deliberately pooled.
 Win rates pool wins and match counts instead of averaging subgroup percentages.
 
+### Tournament match counts
+
+Use `tournament_analysis.unique_match_count` for observed played pairings and
+`perspective_record_count` for player-result records. Mirrored histories count as
+one pairing; one-sided histories remain countable when both players and the round
+are known. Byes and unresolved pairings are disclosed separately. Event totals
+also expose duplicate records and conflicting/incomplete outcomes. These are
+observed counts, not a guarantee that all event histories were imported.
+
+See the [match-count contract](transformations/docs/match_counts.md) for identity,
+normalization, coverage, compatibility aliases, and rebuild instructions.
+
 ### Semantic query migration
 
 Population totals now have dedicated models: `monthly_populations.total_participants`
@@ -164,8 +177,9 @@ and suggestion sample counts are additive observations across cards, not unique
 decks or matches: filter to one card when interpreting them as population counts.
 
 This change preserves the existing set-period assignments and player-perspective
-match facts. Legality periods, physical match identity, deck coverage reporting, and
-lifetime player identities remain separate modeling work.
+match facts. Legality periods, deck coverage reporting, and lifetime player
+identities remain separate modeling work. Unique played-match identity and reconciliation coverage
+are documented in the match-count contract above.
 
 This project uses **uv workspaces** to manage multiple components. When adding dependencies or running commands, you must specify the package name (found in each component's `pyproject.toml`).
 
@@ -228,7 +242,7 @@ uv run sqlfluff lint models
 
 ### CI/CD
 
-Our GitHub Actions pipeline (`.github/workflows/ci.yml`) runs Ruff, dbt project parsing, and ingestion tests on pull requests and pushes to `main`.
+Our GitHub Actions pipeline (`.github/workflows/ci.yml`) runs Ruff, dbt project parsing, ingestion tests, and native dbt unit tests on pull requests and pushes to `main`.
 
 ---
 

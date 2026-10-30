@@ -1,0 +1,395 @@
+# SQL fixtures replace every parent model; no pipeline data is read.
+unit_tests:
+- name: mirrored_histories_reconcile_outcomes
+  model: fct_tournament_matches
+  given:
+  - input: ref('fct_matches')
+    format: sql
+    rows: |
+      select * from (values
+          ('a1', 't1', 'a', 'b', '1', 'Bob', 'WIN'),
+          ('b1', 't1', 'b', 'a', '1', 'Alice', 'LOSS'),
+          ('a2', 't1', 'a', 'b', '2', 'Bob', 'LOSS'),
+          ('b2', 't1', 'b', 'a', '2', 'Alice', 'WIN'),
+          ('a3', 't1', 'a', 'b', '3', 'Bob', 'TIE'),
+          ('b3', 't1', 'b', 'a', '3', 'Alice', 'TIE'),
+          ('a4', 't1', 'a', 'b', '4', 'Bob', 'LOSS'),
+          ('b4', 't1', 'b', 'a', '4', 'Alice', 'LOSS'),
+          ('a5', 't1', 'a', 'b', '5', 'Bob', 'WIN'),
+          ('b5', 't1', 'b', 'a', '5', 'Alice', 'WIN'),
+          ('a6', 't1', 'a', 'b', '6', 'Bob', 'TIE'),
+          ('b6', 't1', 'b', 'a', '6', 'Alice', 'LOSS'),
+          ('a7', 't1', 'a', 'b', '7', 'Bob', null::varchar),
+          ('b7', 't1', 'b', 'a', '7', 'Alice', 'LOSS'),
+          ('a8', 't1', 'a', 'b', '8', 'Bob', 'PENDING'),
+          ('b8', 't1', 'b', 'a', '8', 'Alice', 'LOSS')
+      ) as m(match_id, tournament_id, participant_id, opponent_id, round, opponent_name, result)
+  - input: ref('dim_participants')
+    format: sql
+    fixture: match_participants
+  expect:
+    rows:
+    - canonical_match_id: match:130f377c8c806484d6193bc7c53f802f
+      round_key: '1'
+      perspective_record_count: 2
+      duplicate_perspective_record_count: 0
+      history_status: mirrored
+      outcome_status: consistent
+      low_player_result: WIN
+      high_player_result: LOSS
+    - canonical_match_id: match:250b905b3e4afdfc21096662a291af51
+      round_key: '2'
+      perspective_record_count: 2
+      duplicate_perspective_record_count: 0
+      history_status: mirrored
+      outcome_status: consistent
+      low_player_result: LOSS
+      high_player_result: WIN
+    - canonical_match_id: match:8b2747119de9d9fbfeb3e80c14357687
+      round_key: '3'
+      perspective_record_count: 2
+      duplicate_perspective_record_count: 0
+      history_status: mirrored
+      outcome_status: consistent
+      low_player_result: TIE
+      high_player_result: TIE
+    - canonical_match_id: match:b3109a0409f2ed9f1c8051e2c36305b4
+      round_key: '4'
+      perspective_record_count: 2
+      duplicate_perspective_record_count: 0
+      history_status: mirrored
+      outcome_status: double_loss
+      low_player_result: LOSS
+      high_player_result: LOSS
+    - canonical_match_id: match:1dec0b540a447a4d806656b8acb37f4c
+      round_key: '5'
+      perspective_record_count: 2
+      duplicate_perspective_record_count: 0
+      history_status: mirrored
+      outcome_status: conflicting
+      low_player_result: WIN
+      high_player_result: WIN
+    - canonical_match_id: match:4d12d4532c34a6e20f46c50508a9cc40
+      round_key: '6'
+      perspective_record_count: 2
+      duplicate_perspective_record_count: 0
+      history_status: mirrored
+      outcome_status: conflicting
+      low_player_result: TIE
+      high_player_result: LOSS
+    - canonical_match_id: match:0b54d7d68199688ffb0754f52b23d6d0
+      round_key: '7'
+      perspective_record_count: 2
+      duplicate_perspective_record_count: 0
+      history_status: mirrored
+      outcome_status: incomplete
+      low_player_result: null
+      high_player_result: LOSS
+    - canonical_match_id: match:aef88fb5bf99ffb1d2a09e35e9509181
+      round_key: '8'
+      perspective_record_count: 2
+      duplicate_perspective_record_count: 0
+      history_status: mirrored
+      outcome_status: incomplete
+      low_player_result: PENDING
+      high_player_result: LOSS
+- name: one_sided_history_has_same_identity_as_mirrored
+  model: fct_tournament_matches
+  given:
+  - input: ref('fct_matches')
+    format: sql
+    rows: |
+      select * from (values
+          ('a1', 't1', 'a', 'b', ' Round 001 ', 'Bob', 'WIN')
+      ) as m(match_id, tournament_id, participant_id, opponent_id, round, opponent_name, result)
+  - input: ref('dim_participants')
+    format: sql
+    fixture: match_participants
+  expect:
+    rows:
+    - canonical_match_id: match:130f377c8c806484d6193bc7c53f802f
+      round_key: '1'
+      history_status: one_sided
+      perspective_record_count: 1
+      outcome_status: one_sided
+      low_player_result: WIN
+      high_player_result: null
+- name: mirrored_history_preserves_record_provenance
+  model: fct_tournament_matches
+  given:
+  - input: ref('fct_matches')
+    format: sql
+    rows: |
+      select * from (values
+          ('a1', 't1', 'a', 'b', '1', 'Bob', 'WIN'),
+          ('b1', 't1', 'b', 'a', '01', 'Bob', 'LOSS')
+      ) as m(match_id, tournament_id, participant_id, opponent_id, round, opponent_name, result)
+  - input: ref('dim_participants')
+    format: sql
+    fixture: match_participants
+  expect:
+    rows:
+    - canonical_match_id: match:130f377c8c806484d6193bc7c53f802f
+      perspective_record_ids:
+      - a1
+      - b1
+      history_status: mirrored
+      perspective_record_count: 2
+- name: duplicates_and_contradictory_player_results
+  model: fct_tournament_matches
+  given:
+  - input: ref('fct_matches')
+    format: sql
+    rows: |
+      select * from (values
+          ('a1', 't1', 'a', 'b', '1', 'Bob', 'WIN'),
+          ('b1', 't1', 'b', 'a', '1', 'Bob', 'LOSS'),
+          ('a1', 't1', 'a', 'b', '01', 'Bob', 'WIN'),
+          ('a2', 't1', 'a', 'b', '2', 'Bob', 'WIN'),
+          ('b2', 't1', 'b', 'a', '2', 'Bob', 'LOSS'),
+          ('a02', 't1', 'a', 'b', '02', 'Bob', 'WIN'),
+          ('a3', 't1', 'a', 'b', '3', 'Bob', 'WIN'),
+          ('b3', 't1', 'b', 'a', '3', 'Bob', 'LOSS'),
+          ('a03', 't1', 'a', 'b', '03', 'Bob', 'LOSS')
+      ) as m(match_id, tournament_id, participant_id, opponent_id, round, opponent_name, result)
+  - input: ref('dim_participants')
+    format: sql
+    fixture: match_participants
+  expect:
+    rows:
+    - canonical_match_id: match:130f377c8c806484d6193bc7c53f802f
+      perspective_record_count: 3
+      duplicate_perspective_record_count: 1
+      outcome_status: consistent
+      low_player_result: WIN
+    - canonical_match_id: match:250b905b3e4afdfc21096662a291af51
+      perspective_record_count: 3
+      duplicate_perspective_record_count: 1
+      outcome_status: consistent
+      low_player_result: WIN
+    - canonical_match_id: match:8b2747119de9d9fbfeb3e80c14357687
+      perspective_record_count: 3
+      duplicate_perspective_record_count: 1
+      outcome_status: conflicting
+      low_player_result: null
+- name: missing_and_invalid_rounds_remain_unresolved
+  model: fct_tournament_matches
+  given:
+  - input: ref('fct_matches')
+    format: sql
+    rows: |
+      select * from (values
+          ('invalid0', 't1', 'a', 'b', null::varchar, 'Bob', 'WIN'),
+          ('invalid1', 't1', 'a', 'b', '', 'Bob', 'WIN'),
+          ('invalid2', 't1', 'a', 'b', '  ', 'Bob', 'WIN'),
+          ('invalid3', 't1', 'a', 'b', '?', 'Bob', 'WIN'),
+          ('invalid4', 't1', 'a', 'b', 'unknown', 'Bob', 'WIN'),
+          ('invalid5', 't1', 'a', 'b', '0', 'Bob', 'WIN'),
+          ('invalid6', 't1', 'a', 'b', 'Round 0', 'Bob', 'WIN'),
+          ('invalid7', 't1', 'a', 'b', '-1', 'Bob', 'WIN'),
+          ('invalid8', 't1', 'a', 'b', 'Round -1', 'Bob', 'WIN')
+      ) as m(match_id, tournament_id, participant_id, opponent_id, round, opponent_name, result)
+  - input: ref('dim_participants')
+    format: sql
+    fixture: match_participants
+  expect:
+    rows:
+    - match_group_id: record:invalid0
+      canonical_match_id: null
+      round_key: null
+      resolution_reason: missing_round
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:invalid1
+      canonical_match_id: null
+      round_key: null
+      resolution_reason: missing_round
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:invalid2
+      canonical_match_id: null
+      round_key: null
+      resolution_reason: missing_round
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:invalid3
+      canonical_match_id: null
+      round_key: null
+      resolution_reason: missing_round
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:invalid4
+      canonical_match_id: null
+      round_key: null
+      resolution_reason: missing_round
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:invalid5
+      canonical_match_id: null
+      round_key: null
+      resolution_reason: missing_round
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:invalid6
+      canonical_match_id: null
+      round_key: null
+      resolution_reason: missing_round
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:invalid7
+      canonical_match_id: null
+      round_key: null
+      resolution_reason: missing_round
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:invalid8
+      canonical_match_id: null
+      round_key: null
+      resolution_reason: missing_round
+      history_status: unresolved
+      perspective_record_count: 1
+- name: byes_unknown_players_and_self_pairings_are_not_matches
+  model: fct_tournament_matches
+  given:
+  - input: ref('fct_matches')
+    format: sql
+    rows: |
+      select * from (values
+          ('unresolved1', 't1', 'a', 'unknown', '1', 'Unknown', 'WIN'),
+          ('unresolved2', 't1', 'a', 'x', '2', 'Other event', 'WIN'),
+          ('unresolved3', 't1', 'missing', 'b', '3', 'Bob', 'WIN'),
+          ('unresolved4', 't1', 'a', 'a', '4', 'Alice', 'WIN'),
+          ('unresolved5', 't1', 'a', 'bye-id', '5', ' bye ', 'WIN'),
+          ('unresolved6', 't1', 'a', null::varchar, '6', null::varchar, 'WIN')
+      ) as m(match_id, tournament_id, participant_id, opponent_id, round, opponent_name, result)
+  - input: ref('dim_participants')
+    format: sql
+    fixture: match_participants
+  expect:
+    rows:
+    - match_group_id: record:unresolved1
+      canonical_match_id: null
+      resolution_reason: unknown_opponent
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:unresolved2
+      canonical_match_id: null
+      resolution_reason: unknown_opponent
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:unresolved3
+      canonical_match_id: null
+      resolution_reason: unknown_player
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:unresolved4
+      canonical_match_id: null
+      resolution_reason: self_pairing
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: record:unresolved5
+      canonical_match_id: null
+      resolution_reason: bye
+      history_status: bye
+      perspective_record_count: 1
+    - match_group_id: record:unresolved6
+      canonical_match_id: null
+      resolution_reason: unknown_opponent
+      history_status: unresolved
+      perspective_record_count: 1
+- name: rounds_phases_and_events_have_distinct_identities
+  model: fct_tournament_matches
+  given:
+  - input: ref('fct_matches')
+    format: sql
+    rows: |
+      select * from (values
+          ('a1', 't1', 'a', 'b', '1', 'Bob', 'WIN'),
+          ('a2', 't1', 'a', 'b', '2', 'Bob', 'WIN'),
+          ('as1', 't1', 'a', 'b', 'Swiss 1', 'Bob', 'WIN'),
+          ('at1', 't1', 'a', 'b', 'Top 1', 'Bob', 'WIN'),
+          ('x1', 't2', 'x', 'y', '1', 'Bob', 'WIN')
+      ) as m(match_id, tournament_id, participant_id, opponent_id, round, opponent_name, result)
+  - input: ref('dim_participants')
+    format: sql
+    fixture: match_participants
+  expect:
+    rows:
+    - canonical_match_id: match:130f377c8c806484d6193bc7c53f802f
+      tournament_id: t1
+      round_key: '1'
+    - canonical_match_id: match:250b905b3e4afdfc21096662a291af51
+      tournament_id: t1
+      round_key: '2'
+    - canonical_match_id: match:1b551ea9013380169101d7660a64da71
+      tournament_id: t1
+      round_key: swiss 1
+    - canonical_match_id: match:9bf8834b5bf04fc05e728c2dfd4b0ffb
+      tournament_id: t1
+      round_key: top 1
+    - canonical_match_id: match:d111fcc3d6943c110628ab3ff51ff07b
+      tournament_id: t2
+      round_key: '1'
+- name: named_rounds_normalize_case_and_whitespace
+  model: fct_tournament_matches
+  given:
+  - input: ref('fct_matches')
+    format: sql
+    rows: |
+      select * from (values
+          ('a1', 't1', 'a', 'b', ' Top   8 ', 'Bob', 'WIN'),
+          ('b1', 't1', 'b', 'a', 'top 8', 'Bob', 'LOSS')
+      ) as m(match_id, tournament_id, participant_id, opponent_id, round, opponent_name, result)
+  - input: ref('dim_participants')
+    format: sql
+    fixture: match_participants
+  expect:
+    rows:
+    - canonical_match_id: match:e5607715258009efdab5c114465c2803
+      round_key: top 8
+      history_status: mirrored
+      perspective_record_count: 2
+- name: conflicting_pairings_include_inferred_reverse_edges
+  model: fct_tournament_matches
+  given:
+  - input: ref('fct_matches')
+    format: sql
+    rows: |
+      select * from (values
+          ('ab', 't1', 'a', 'b', '1', 'Bob', 'WIN'),
+          ('bc', 't1', 'b', 'c', '1', 'Bob', 'LOSS'),
+          ('de', 't1', 'd', 'e', '1', 'Bob', 'WIN')
+      ) as m(match_id, tournament_id, participant_id, opponent_id, round, opponent_name, result)
+  - input: ref('dim_participants')
+    format: sql
+    fixture: match_participants
+  expect:
+    rows:
+    - match_group_id: match:130f377c8c806484d6193bc7c53f802f
+      canonical_match_id: null
+      resolution_reason: conflicting_pairing
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: match:70372bf0c64911977383be60d2e57bbd
+      canonical_match_id: null
+      resolution_reason: conflicting_pairing
+      history_status: unresolved
+      perspective_record_count: 1
+    - match_group_id: match:484c4d0ae96d9470f5d1f690d7ec4f52
+      canonical_match_id: match:484c4d0ae96d9470f5d1f690d7ec4f52
+      resolution_reason: resolved
+      history_status: one_sided
+      perspective_record_count: 1
+- name: empty_histories_do_not_invent_matches
+  model: fct_tournament_matches
+  given:
+  - input: ref('fct_matches')
+    format: sql
+    rows: |
+      select null::varchar as match_id, null::varchar as tournament_id, null::varchar as participant_id, null::varchar as opponent_id, null::varchar as round, null::varchar as opponent_name, null::varchar as result
+      where false
+  - input: ref('dim_participants')
+    format: sql
+    fixture: match_participants
+  expect:
+    rows: []

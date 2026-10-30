@@ -4,3 +4,7 @@ pokemon_tcg_transform:
     dev:
       type: duckdb
       path: "../pokemon_tcg_pipeline.duckdb"
+    unit:
+      type: duckdb
+      path: ":memory:"
+      threads: 1
