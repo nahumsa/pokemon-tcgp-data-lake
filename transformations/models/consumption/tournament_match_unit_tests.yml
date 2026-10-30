@@ -1,0 +1,94 @@
+# SQL fixtures replace every parent model; no pipeline data is read.
+unit_tests:
+- name: event_counts_use_reconciliation_buckets
+  model: mart_tournament_analysis
+  given:
+  - input: ref('fct_tournament_matches')
+    format: sql
+    rows: |
+      select * from (values
+          ('t1', 'm1', 3, 'mirrored', 1, 'consistent'),
+          ('t1', 'm2', 1, 'one_sided', 0, 'one_sided'),
+          ('t1', null::varchar, 1, 'bye', 0, 'not_applicable'),
+          ('t1', null::varchar, 1, 'unresolved', 0, 'unresolved'),
+          ('t1', 'm5', 2, 'mirrored', 0, 'conflicting'),
+          ('t1', 'm6', 2, 'mirrored', 0, 'incomplete')
+      ) as m(tournament_id, canonical_match_id, perspective_record_count, history_status, duplicate_perspective_record_count, outcome_status)
+  - input: ref('dim_tournaments')
+    format: sql
+    rows: |
+      select 't1' as tournament_id, date '2026-01-01' as tournament_date
+      union all
+      select 't2', date '2026-02-01'
+  - input: ref('dim_pokemon_sets')
+    format: sql
+    rows: |
+      select 'Set' as set_name, date '2025-12-01' as release_date
+  expect:
+    rows:
+    - tournament_id: t1
+      total_matches: 10
+      perspective_record_count: 10
+      unique_match_count: 4
+      mirrored_match_count: 3
+      one_sided_match_count: 1
+      bye_record_count: 1
+      unresolved_perspective_record_count: 1
+      duplicate_perspective_record_count: 1
+      conflicting_outcome_match_count: 1
+      incomplete_outcome_match_count: 1
+    - tournament_id: t2
+      total_matches: 0
+      perspective_record_count: 0
+      unique_match_count: 0
+      mirrored_match_count: 0
+      one_sided_match_count: 0
+      bye_record_count: 0
+      unresolved_perspective_record_count: 0
+      duplicate_perspective_record_count: 0
+      conflicting_outcome_match_count: 0
+      incomplete_outcome_match_count: 0
+- name: events_without_histories_have_zero_observed_counts
+  model: mart_tournament_analysis
+  given:
+  - input: ref('fct_tournament_matches')
+    format: sql
+    rows: |
+      select null::varchar as tournament_id, null::varchar as canonical_match_id,
+             0::bigint as perspective_record_count, null::varchar as history_status,
+             0::bigint as duplicate_perspective_record_count, null::varchar as outcome_status
+      where false
+  - input: ref('dim_tournaments')
+    format: sql
+    rows: |
+      select 't1' as tournament_id, date '2026-01-01' as tournament_date
+      union all
+      select 't2', date '2026-02-01'
+  - input: ref('dim_pokemon_sets')
+    format: sql
+    rows: |
+      select 'Set' as set_name, date '2025-12-01' as release_date
+  expect:
+    rows:
+    - tournament_id: t1
+      total_matches: 0
+      perspective_record_count: 0
+      unique_match_count: 0
+      mirrored_match_count: 0
+      one_sided_match_count: 0
+      bye_record_count: 0
+      unresolved_perspective_record_count: 0
+      duplicate_perspective_record_count: 0
+      conflicting_outcome_match_count: 0
+      incomplete_outcome_match_count: 0
+    - tournament_id: t2
+      total_matches: 0
+      perspective_record_count: 0
+      unique_match_count: 0
+      mirrored_match_count: 0
+      one_sided_match_count: 0
+      bye_record_count: 0
+      unresolved_perspective_record_count: 0
+      duplicate_perspective_record_count: 0
+      conflicting_outcome_match_count: 0
+      incomplete_outcome_match_count: 0

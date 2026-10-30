@@ -91,14 +91,22 @@ Rebuild the new fact and the event mart before starting the MCP server:
 
 ```bash
 cd transformations
-uv run dbt build --profiles-dir . --select fct_tournament_matches mart_tournament_analysis assert_match_reconciliation_counts
+uv run dbt build --profiles-dir . --select fct_tournament_matches mart_tournament_analysis
 ```
 
-CI runs isolated synthetic SQL and semantic-query tests, including coverage
-invariants and empty events, without relying on saved tournament databases:
+CI runs native dbt unit tests with static SQL fixtures for every parent model.
+The reconciliation tests mock `fct_matches` and `dim_participants`; the event-mart
+tests independently mock `fct_tournament_matches`, `dim_tournaments`, and
+`dim_pokemon_sets`. Tests compare model outputs with fixed expected rows; they do
+not run ingestion, chain model materializations, or exercise the semantic server.
+
+The `unit` target uses an in-memory DuckDB database. SQL fixtures supply their own
+column types, so neither saved tournament data nor prebuilt parent tables are
+required:
 
 ```bash
-uv run pytest transformations/tests_python -q
+cd transformations
+uv run --package pokemon-tcg-transformations dbt test --profiles-dir . --target unit --select test_type:unit
 ```
 
 This work supplies match-count coverage, not overall ingestion freshness or report

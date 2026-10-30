@@ -109,8 +109,9 @@ extensions; these transformations operate entirely on the local DuckDB tables.
 
 CI tests ingestion logic with mocked requests, small synthetic inputs, and
 isolated temporary DuckDB databases. The tests are independent of saved tournament
-snapshots and existing pipeline databases. Ruff and dbt parsing check code and
-project configuration without loading tournament data.
+snapshots and existing pipeline databases. Native dbt unit tests validate match reconciliation and event counts with mocked
+parent models in an in-memory DuckDB database. Ruff and dbt parsing check code
+and project configuration without loading tournament data.
 
 To validate a real-data analytics rebuild, fetch the latest events or reload a
 locally saved snapshot, then run the dbt commands above. This workflow is separate
@@ -241,7 +242,7 @@ uv run sqlfluff lint models
 
 ### CI/CD
 
-Our GitHub Actions pipeline (`.github/workflows/ci.yml`) runs Ruff, dbt project parsing, and ingestion tests on pull requests and pushes to `main`.
+Our GitHub Actions pipeline (`.github/workflows/ci.yml`) runs Ruff, dbt project parsing, ingestion tests, and native dbt unit tests on pull requests and pushes to `main`.
 
 ---
 

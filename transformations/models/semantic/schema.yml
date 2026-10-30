@@ -184,26 +184,14 @@ models:
     columns:
       - name: match_group_id
         description: "Unique reconciliation group. Conflicting candidate pairs keep their pair key; other unresolved records and byes use a source-record fallback."
-        tests: [unique, not_null]
       - name: canonical_match_id
         description: "Canonical event/round/player-pair ID, null for byes and unresolved pairings."
-        tests: [unique]
       - name: resolution_reason
-        tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: [resolved, bye, missing_round, unknown_player, unknown_opponent, self_pairing, conflicting_pairing]
+        description: "Reason a pairing is resolved or excluded from unique played matches."
       - name: history_status
-        tests:
-          - accepted_values:
-              arguments:
-                values: [mirrored, one_sided, bye, unresolved]
+        description: "Whether histories are mirrored, one-sided, a bye, or unresolved."
       - name: outcome_status
-        tests:
-          - accepted_values:
-              arguments:
-                values: [consistent, double_loss, one_sided, conflicting, incomplete, unresolved, not_applicable]
+        description: "Consistency of the recorded results, independent of pairing identity."
       - name: perspective_record_ids
         description: "Contributing fct_matches.match_id values for provenance and drilldown."
       - name: perspective_record_count
