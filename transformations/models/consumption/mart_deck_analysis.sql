@@ -43,7 +43,7 @@ select
     m.wins,
     m.losses,
     m.ties,
-    case when m.total_matches > 0 then m.wins::double / m.total_matches else 0 end as win_rate
+    m.wins * 100.0 / nullif(m.total_matches, 0) as win_rate
 from participants as p
 left join matches as m on p.participant_id = m.participant_id
 left join tournaments_with_sets as ts on p.tournament_id = ts.tournament_id

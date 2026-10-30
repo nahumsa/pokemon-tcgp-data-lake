@@ -42,6 +42,6 @@ jobs:
       - name: Lint with Ruff
         run: uv run ruff check .
 
-      - name: Test ingestion logic
-        run: uv run pytest ingestion/test_labs.py -q
+      - name: Test ingestion and aggregate metrics
+        run: uv run pytest ingestion/test_labs.py semantic_layer/tests -q
 
