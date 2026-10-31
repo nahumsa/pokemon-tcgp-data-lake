@@ -12,10 +12,9 @@ Join `participant_id` to `dim_participants` for event and decklist provenance.
 1. The latest Labs standing's non-null label overrides card rules. A label maps
    to a shared parent only if the seed maps it to exactly one distinct parent.
    Unknown or ambiguous labels retain their original text as the parent and
-   variant. A newer null label does not resurrect an older label. If load IDs tie,
-   null labels sort first (a withdrawal wins); otherwise the alphabetically first
-   label wins. This deterministic fallback does not identify which equally fresh
-   conflicting record is the provider's authoritative update.
+   variant. A newer null label does not resurrect an older label. Equal load IDs
+   resolve by label ascending with nulls first, so a withdrawal wins a tie. This
+   fallback is deterministic; it does not identify the authoritative source row.
 2. For card rules, both required cards must exist. Matching two-card variants
    beat one-card base rules, regardless of priority. Reprints/repeated card rows
    cannot multiply a rule match.
@@ -50,9 +49,8 @@ the status continues to describe the overriding label.
 ## Rule maintenance and historical reports
 
 Do not renumber or reuse `rule_id` values. Add new IDs for new rules and retain
-IDs when correcting a rule's content. The ruleset version combines the algorithm
-prefix (currently `v2:`) with a fingerprint of the complete seed, including
-priorities, in stable ID order. Content changes alter
+IDs when correcting a rule's content. The `v1:` ruleset version fingerprints the
+complete seed, including priorities, in stable ID order. Content changes alter
 the fingerprint; input order alone does not. Bump the algorithm prefix when
 changing classification policy. Git history preserves prior rulesets; rebuilding
 tables reclassifies historical events with the current seed, so archive the
@@ -81,7 +79,7 @@ uv run dbt test --profiles-dir .
 Full refresh is required when upgrading the seed's columns. Restart the MCP
 server after rebuilding so it loads the new diagnostic table.
 
-## Original PR #18 real-data verification (2026-10-31)
+## Real-data verification (2026-10-31)
 
 Fetched the latest completed Masters event with:
 
@@ -113,7 +111,7 @@ rules on the same real decks: 1,229 matched, 437 ambiguous, 556 unmatched, and 1
 missing lists. It also preserved every pre-change classified result. These are
 card-rule diagnostics, not the event's authoritative published classifications.
 Reversing seed order produced zero diagnostic differences in both modes, and
-editing a priority changed the fingerprint. The original PR #18 ruleset was
+editing a priority changed the fingerprint. The final ruleset is
 `v1:344e2a634e798296850a99b98eb8465a`.
 
 The full dbt suite passed 97 data tests and 15 unit tests. The Python ingestion and
@@ -122,36 +120,3 @@ passed. Unit fixtures cover priority, ID tie-breaking, variant precedence,
 repeated card rows, source overrides, ambiguous/unmapped labels, removal of an
 old label, unmatched decks, and missing lists. The two initial priority/ID tests
 were first observed failing against the original classifier.
-
-
-## Reproducing the adversarial evidence checks
-
-The [fresh-context review](pr18_adversarial_review.md) records the limitations of
-those original observations and the follow-up correction. Algorithm `v2` adds
-source-label tie handling; the seed fingerprint itself is unchanged.
-
-After ingesting the saved snapshot into an isolated database, running the dbt
-seed/rebuild/test commands above, and fetching the baseline commit if necessary:
-
-```bash
-uv run python transformations/analysis/verify_archetype_evidence.py \
-  --database pokemon_tcg_pipeline.duckdb \
-  --snapshot data/limitless_labs/issue7.json.gz \
-  --expected-snapshot-sha256 7b44c7252554cb61e0d4dec57983db3e0d49b1cb56e30ffb31c3ed9c24c8d89f
-```
-
-Run from the repository root. The default baseline is the exact pre-PR commit
-`11863bd8085c80a76753131268aa072ef1d801a9`. This read-only database check uses
-temporary tables to compare snapshot scalar contents and nested card multisets,
-recompute the classifier's staging/fact inputs from raw production SQL, and
-compare the loaded seed to the checkout. It then checks the original SQL/seed
-baseline, repeat and reversed-rule executions, persisted diagnostics, and a
-priority mutation. Changed row multiplicities are checked with `EXCEPT ALL`.
-The [recorded aggregate output](pr18_evidence_verification.json) contains the
-observed counts and checks, without player records.
-
-The exact snapshot is still required and is not distributed with the code. Its
-hash identifies the saved input; it does not independently authenticate the
-remote provider. The verifier does not replace ingestion execution, dbt tests,
-or a live provider audit. GitHub CI runs unit/logic checks without that dataset;
-the full real-data rebuild and this verifier are separate local checks.

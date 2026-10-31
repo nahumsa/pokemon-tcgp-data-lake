@@ -5,7 +5,7 @@ with meta as (
 ruleset as (
     -- Hash rule content in stable ID order; changing precedence changes the version.
     select
-        'v2:' || md5(coalesce(string_agg(
+        'v1:' || md5(coalesce(string_agg(
             cast(row(rule_id, rule_priority, card_name_1, card_name_2, archetype, sub_archetype) as varchar),
             '|' order by rule_id
         ), '')) as ruleset_version
