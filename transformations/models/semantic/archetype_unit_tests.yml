@@ -162,3 +162,77 @@ unit_tests:
       top_candidate_count: 0
       matched_rule_ids: null
       top_rule_ids: null
+- name: source_label_ties_are_deterministic_forward
+  model: dim_deck_classification
+  given:
+  - input: ref('meta_decks')
+    format: sql
+    rows: |
+      select 'r1' as rule_id, 0 as rule_priority, 'Key' as card_name_1, null::varchar as card_name_2, 'Parent' as archetype, 'Known' as sub_archetype
+  - input: ref('dim_participants')
+    format: sql
+    rows: |
+      select * from (values ('d4622368ed095a92180bc3734888d4df'), ('762e5b0d392243d930b28501d71fadce')) p(participant_id)
+  - input: ref('fct_deck_composition')
+    format: sql
+    rows: |
+      select null::varchar as participant_id, null::varchar as card_name where false
+  - input: source('pokemon_tcg', 'tournament_participants')
+    format: sql
+    rows: |
+      select * from (values
+        ('Mapped', 'New Deck', '2'),
+        ('Mapped', 'Known', '2'),
+        ('Removed', 'Known', '2'),
+        ('Removed', null::varchar, '2')
+      ) s(name, deck, _dlt_load_id)
+      cross join (select 'https://labs.limitlesstcg.com/0001/standings' as tournament_link) t
+  expect:
+    rows:
+    - participant_id: d4622368ed095a92180bc3734888d4df
+      archetype: Parent
+      sub_archetype: Known
+      source_archetype_label: Known
+      classification_status: source_label_mapped
+    - participant_id: 762e5b0d392243d930b28501d71fadce
+      archetype: null
+      sub_archetype: null
+      source_archetype_label: null
+      classification_status: missing_decklist
+- name: source_label_ties_are_deterministic_reversed
+  model: dim_deck_classification
+  given:
+  - input: ref('meta_decks')
+    format: sql
+    rows: |
+      select 'r1' as rule_id, 0 as rule_priority, 'Key' as card_name_1, null::varchar as card_name_2, 'Parent' as archetype, 'Known' as sub_archetype
+  - input: ref('dim_participants')
+    format: sql
+    rows: |
+      select * from (values ('d4622368ed095a92180bc3734888d4df'), ('762e5b0d392243d930b28501d71fadce')) p(participant_id)
+  - input: ref('fct_deck_composition')
+    format: sql
+    rows: |
+      select null::varchar as participant_id, null::varchar as card_name where false
+  - input: source('pokemon_tcg', 'tournament_participants')
+    format: sql
+    rows: |
+      select * from (values
+        ('Removed', null::varchar, '2'),
+        ('Removed', 'Known', '2'),
+        ('Mapped', 'Known', '2'),
+        ('Mapped', 'New Deck', '2')
+      ) s(name, deck, _dlt_load_id)
+      cross join (select 'https://labs.limitlesstcg.com/0001/standings' as tournament_link) t
+  expect:
+    rows:
+    - participant_id: d4622368ed095a92180bc3734888d4df
+      archetype: Parent
+      sub_archetype: Known
+      source_archetype_label: Known
+      classification_status: source_label_mapped
+    - participant_id: 762e5b0d392243d930b28501d71fadce
+      archetype: null
+      sub_archetype: null
+      source_archetype_label: null
+      classification_status: missing_decklist
