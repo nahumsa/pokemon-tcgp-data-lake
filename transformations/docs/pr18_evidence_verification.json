@@ -1,0 +1,39 @@
+{
+  "baseline_commit": "11863bd8085c80a76753131268aa072ef1d801a9",
+  "card_only": {
+    "legacy_difference_rows": 0,
+    "priority_changes_version": true,
+    "repeat_difference_rows": 0,
+    "reversed_rule_difference_rows": 0,
+    "ruleset_version": "v2:344e2a634e798296850a99b98eb8465a",
+    "status_counts": {
+      "ambiguous": 437,
+      "matched": 1229,
+      "missing_decklist": 12,
+      "unmatched": 556
+    }
+  },
+  "classifier_inputs_match_rebuild": true,
+  "production": {
+    "legacy_difference_rows": 0,
+    "persisted_difference_rows": 0,
+    "priority_changes_version": true,
+    "repeat_difference_rows": 0,
+    "reversed_rule_difference_rows": 0,
+    "ruleset_version": "v2:344e2a634e798296850a99b98eb8465a",
+    "status_counts": {
+      "missing_decklist": 12,
+      "source_label_mapped": 1200,
+      "source_label_unmapped": 1022
+    }
+  },
+  "seed_matches_checkout": true,
+  "snapshot_contents_match_raw": true,
+  "snapshot_rows": {
+    "participant_deck": 2222,
+    "participant_matches": 18788,
+    "tournament_participants": 2234,
+    "tournaments": 1
+  },
+  "snapshot_sha256": "7b44c7252554cb61e0d4dec57983db3e0d49b1cb56e30ffb31c3ed9c24c8d89f"
+}
