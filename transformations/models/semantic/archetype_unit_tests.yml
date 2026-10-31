@@ -1,47 +1,132 @@
-# These exercise the production classifier with isolated inputs, without saved data.
+# Production SQL with isolated fixtures; no saved databases are required.
 unit_tests:
-  - name: archetype_priority_overrides_alphabetical_order
-    model: dim_deck_archetypes
-    given:
-      - input: ref('meta_decks')
-        format: sql
-        rows: |
-          select * from (values
-            ('r-a', 0, 'Key', null::varchar, 'Alpha', 'Alpha'),
-            ('r-z', 10, 'Key', null::varchar, 'Zulu', 'Zulu')
-          ) m(rule_id, rule_priority, card_name_1, card_name_2, archetype, sub_archetype)
-      - input: ref('fct_deck_composition')
-        format: sql
-        rows: |
-          select 'p1' as participant_id, 'Key' as card_name
-      - input: source('pokemon_tcg', 'tournament_participants')
-        format: sql
-        rows: |
-          select null::varchar as name, null::varchar as tournament_link,
-            null::varchar as deck, null::varchar as _dlt_load_id where false
-    expect:
-      rows:
-        - {participant_id: p1, archetype: Zulu, sub_archetype: Zulu}
+- name: archetype_priority_overrides_alphabetical_order
+  model: dim_deck_classification
+  given:
+  - input: ref('meta_decks')
+    format: sql
+    rows: "select * from (values\n  ('r-a', 0, 'Key', null::varchar, 'Alpha', 'Alpha'),\n  ('r-z', 10, 'Key', null::varchar,\
+      \ 'Zulu', 'Zulu')\n) m(rule_id, rule_priority, card_name_1, card_name_2, archetype, sub_archetype)\n"
+  - input: ref('fct_deck_composition')
+    format: sql
+    rows: 'select ''p1'' as participant_id, ''Key'' as card_name
 
-  - name: archetype_stable_rule_id_resolves_equal_priority
-    model: dim_deck_archetypes
-    given:
-      - input: ref('meta_decks')
-        format: sql
-        rows: |
-          select * from (values
-            ('r-z', 0, 'Key', null::varchar, 'Alpha', 'Alpha'),
-            ('r-a', 0, 'Key', null::varchar, 'Zulu', 'Zulu')
-          ) m(rule_id, rule_priority, card_name_1, card_name_2, archetype, sub_archetype)
-      - input: ref('fct_deck_composition')
-        format: sql
-        rows: |
-          select 'p1' as participant_id, 'Key' as card_name
-      - input: source('pokemon_tcg', 'tournament_participants')
-        format: sql
-        rows: |
-          select null::varchar as name, null::varchar as tournament_link,
-            null::varchar as deck, null::varchar as _dlt_load_id where false
-    expect:
-      rows:
-        - {participant_id: p1, archetype: Zulu, sub_archetype: Zulu}
+      '
+  - input: source('pokemon_tcg', 'tournament_participants')
+    format: sql
+    rows: "select null::varchar as name, null::varchar as tournament_link,\n  null::varchar as deck, null::varchar\
+      \ as _dlt_load_id where false\n"
+  - input: ref('dim_participants')
+    format: sql
+    rows: select 'p1' as participant_id
+  expect:
+    rows:
+    - participant_id: p1
+      archetype: Zulu
+      sub_archetype: Zulu
+- name: archetype_stable_rule_id_resolves_equal_priority
+  model: dim_deck_classification
+  given:
+  - input: ref('meta_decks')
+    format: sql
+    rows: "select * from (values\n  ('r-z', 0, 'Key', null::varchar, 'Alpha', 'Alpha'),\n  ('r-a', 0, 'Key', null::varchar,\
+      \ 'Zulu', 'Zulu')\n) m(rule_id, rule_priority, card_name_1, card_name_2, archetype, sub_archetype)\n"
+  - input: ref('fct_deck_composition')
+    format: sql
+    rows: 'select ''p1'' as participant_id, ''Key'' as card_name
+
+      '
+  - input: source('pokemon_tcg', 'tournament_participants')
+    format: sql
+    rows: "select null::varchar as name, null::varchar as tournament_link,\n  null::varchar as deck, null::varchar\
+      \ as _dlt_load_id where false\n"
+  - input: ref('dim_participants')
+    format: sql
+    rows: select 'p1' as participant_id
+  expect:
+    rows:
+    - participant_id: p1
+      archetype: Zulu
+      sub_archetype: Zulu
+- name: classification_diagnostics_preserve_coverage_and_ambiguity
+  model: dim_deck_classification
+  given:
+  - input: ref('meta_decks')
+    format: sql
+    rows: "select * from (values\n ('base', 1000, 'Key', null::varchar, 'Base', 'Base'),\n ('variant', 0, 'Key',\
+      \ 'Extra', 'Base', 'Variant'),\n ('tie-z', 0, 'Tie', null, 'Alpha', 'Alpha'),\n ('tie-a', 0, 'Tie', null,\
+      \ 'Zulu', 'Zulu'),\n ('label-a', 0, 'L1', null, 'Parent', 'Known'),\n ('label-b', 0, 'L2', null, 'Parent A',\
+      \ 'Shared'),\n ('label-c', 0, 'L3', null, 'Parent B', 'Shared')\n) m(rule_id, rule_priority, card_name_1,\
+      \ card_name_2, archetype, sub_archetype)"
+  - input: ref('dim_participants')
+    format: sql
+    rows: select * from (values ('variant'), ('tie'), ('unmatched'), ('missing'), ('d4622368ed095a92180bc3734888d4df'),
+      ('bad85632f3b832746240abe09e31e48b'), ('c4982a00fff2d49c343a5d12c3309b8d'), ('762e5b0d392243d930b28501d71fadce'))
+      p(participant_id)
+  - input: ref('fct_deck_composition')
+    format: sql
+    rows: select * from (values ('variant', 'Key'), ('variant', 'Extra'), ('variant', 'Extra'), ('tie', 'Tie'),
+      ('unmatched', 'Other')) d(participant_id, card_name)
+  - input: source('pokemon_tcg', 'tournament_participants')
+    format: sql
+    rows: "select * from (values\n ('Mapped', 'Known', '2'), ('Unmapped', 'New Deck', '2'),\n ('Ambiguous', 'Shared',\
+      \ '2'), ('Removed', 'Known', '1'),\n ('Removed', null, '2')\n) s(name, deck, _dlt_load_id)\ncross join (select\
+      \ 'https://labs.limitlesstcg.com/0001/standings' as tournament_link) t"
+  expect:
+    rows:
+    - participant_id: variant
+      archetype: Base
+      sub_archetype: Variant
+      classification_status: matched
+      selected_rule_id: variant
+      matched_rule_count: 2
+      top_candidate_count: 1
+    - participant_id: tie
+      archetype: Zulu
+      sub_archetype: Zulu
+      classification_status: ambiguous
+      selected_rule_id: tie-a
+      matched_rule_count: 2
+      top_candidate_count: 2
+    - participant_id: unmatched
+      archetype: null
+      sub_archetype: null
+      classification_status: unmatched
+      selected_rule_id: null
+      matched_rule_count: 0
+      top_candidate_count: 0
+    - participant_id: missing
+      archetype: null
+      sub_archetype: null
+      classification_status: missing_decklist
+      selected_rule_id: null
+      matched_rule_count: 0
+      top_candidate_count: 0
+    - participant_id: d4622368ed095a92180bc3734888d4df
+      archetype: Parent
+      sub_archetype: Known
+      classification_status: source_label_mapped
+      selected_rule_id: null
+      matched_rule_count: 0
+      top_candidate_count: 0
+    - participant_id: bad85632f3b832746240abe09e31e48b
+      archetype: New Deck
+      sub_archetype: New Deck
+      classification_status: source_label_unmapped
+      selected_rule_id: null
+      matched_rule_count: 0
+      top_candidate_count: 0
+    - participant_id: c4982a00fff2d49c343a5d12c3309b8d
+      archetype: Shared
+      sub_archetype: Shared
+      classification_status: source_label_ambiguous
+      selected_rule_id: null
+      matched_rule_count: 0
+      top_candidate_count: 0
+    - participant_id: 762e5b0d392243d930b28501d71fadce
+      archetype: null
+      sub_archetype: null
+      classification_status: missing_decklist
+      selected_rule_id: null
+      matched_rule_count: 0
+      top_candidate_count: 0
