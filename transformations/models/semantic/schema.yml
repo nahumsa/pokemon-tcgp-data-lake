@@ -123,10 +123,10 @@ models:
           - not_null
 
   - name: fct_matches
-    description: "Fact table recording match results for participants."
+    description: "Player-perspective result records; preserve for player and archetype metrics, not physical-match totals."
     columns:
       - name: match_id
-        description: "Unique surrogate key for the match."
+        description: "Unique surrogate key for a player/event/raw-round record, not a unique played match."
         tests:
           - unique
           - not_null
@@ -178,3 +178,23 @@ models:
         description: "Date when the set becomes legal for online tournament play (Release Date - 1 day)."
         tests:
           - not_null
+
+  - name: fct_tournament_matches
+    description: "Observed played pairings and unresolved record groups; source histories may be incomplete."
+    columns:
+      - name: match_group_id
+        description: "Unique reconciliation group. Conflicting candidate pairs keep their pair key; other unresolved records and byes use a source-record fallback."
+      - name: canonical_match_id
+        description: "Canonical event/round/player-pair ID, null for byes and unresolved pairings."
+      - name: resolution_reason
+        description: "Reason a pairing is resolved or excluded from unique played matches."
+      - name: history_status
+        description: "Whether histories are mirrored, one-sided, a bye, or unresolved."
+      - name: outcome_status
+        description: "Consistency of the recorded results, independent of pairing identity."
+      - name: perspective_record_ids
+        description: "Contributing fct_matches.match_id values for provenance and drilldown."
+      - name: perspective_record_count
+        description: "Number of contributing player-perspective records."
+      - name: duplicate_perspective_record_count
+        description: "Extra records per player in the reconciliation group."

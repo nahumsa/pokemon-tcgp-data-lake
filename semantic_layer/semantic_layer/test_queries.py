@@ -41,6 +41,7 @@ tables: Dict[str, Any] = {
     "mart_deck_analysis": con.table("mart_deck_analysis", database="main_consumption"),
     "dim_cards": con.table("dim_cards", database="main_semantic"),
     "fct_matches": con.table("fct_matches", database="main_semantic"),
+    "fct_tournament_matches": con.table("fct_tournament_matches", database="main_semantic"),
 }
 
 models: Dict[str, Any] = from_yaml(str(yaml_path), tables=tables)
