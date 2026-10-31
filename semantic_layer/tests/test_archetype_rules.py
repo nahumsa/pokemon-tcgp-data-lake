@@ -1,5 +1,6 @@
 """Run the production seed validation query against deliberately invalid rules."""
 
+import csv
 from pathlib import Path
 
 import duckdb
@@ -72,3 +73,23 @@ def test_committed_seed_satisfies_the_production_validation(validation_sql):
             [str(ROOT / "transformations/seeds/meta_decks.csv")],
         )
         assert con.execute(validation_sql).fetchall() == []
+
+
+def test_published_parent_mappings_have_consistent_canonical_rows():
+    with (ROOT / "transformations/seeds/limitless_archetypes.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    by_id = {row["source_deck_id"]: row for row in rows}
+    assert len(by_id) == len(rows)
+    assert len({row["source_label"] for row in rows}) == len(rows)
+    for row in rows:
+        assert all(row.values())
+        parent = by_id[row["archetype_id"]]
+        assert parent["source_deck_id"] == parent["archetype_id"]
+        assert parent["source_label"] == parent["archetype"] == row["archetype"]
+    with (ROOT / "transformations/seeds/deck_engine_rules.csv").open() as handle:
+        engines = list(csv.DictReader(handle))
+    assert len({row["engine_id"] for row in engines}) == len(engines)
+    assert len({row["engine"] for row in engines}) == len(engines)
+    for row in engines:
+        assert all(row.values())
+        assert row["card_name_1"] != row["card_name_2"]

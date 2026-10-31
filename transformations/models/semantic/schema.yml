@@ -202,6 +202,8 @@ models:
   - name: dim_deck_classification
     description: "Classification coverage and rule provenance for every imported participant. See docs/archetype_classification.md."
     columns:
+      - name: deck_engines
+        description: "Sorted comma-separated shared engines detected from required cards; independent of the published archetype."
       - name: participant_id
         tests:
           - unique

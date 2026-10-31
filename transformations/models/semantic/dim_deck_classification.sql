@@ -2,23 +2,39 @@ with meta as (
     select * from {{ ref('meta_decks') }}
 ),
 
-ruleset as (
-    -- Hash rule content in stable ID order; changing precedence changes the version.
-    select
-        'v1:' || md5(coalesce(string_agg(
-            cast(row(rule_id, rule_priority, card_name_1, card_name_2, archetype, sub_archetype) as varchar),
-            '|' order by rule_id
-        ), '')) as ruleset_version
-    from meta
-),
-
 label_mapping as (
     select
-        sub_archetype,
+        source_label,
         min(archetype) as archetype,
-        count(distinct archetype) as parent_count
+        count(distinct archetype_id) as parent_count
+    from {{ ref('limitless_archetypes') }}
+    group by source_label
+),
+
+rule_definitions as (
+    select
+        'card:' || rule_id as rule_key,
+        cast(row(rule_id, rule_priority, card_name_1, card_name_2, archetype, sub_archetype) as varchar) as definition
     from meta
-    group by sub_archetype
+
+    union all
+
+    select
+        'label:' || source_deck_id as rule_key,
+        cast(row(source_deck_id, source_label, archetype_id, archetype) as varchar) as definition
+    from {{ ref('limitless_archetypes') }}
+
+    union all
+
+    select
+        'engine:' || engine_id as rule_key,
+        cast(row(engine_id, engine, card_name_1, card_name_2) as varchar) as definition
+    from {{ ref('deck_engine_rules') }}
+),
+
+ruleset as (
+    select 'v1:' || md5(coalesce(string_agg(definition, '|' order by rule_key), '')) as ruleset_version
+    from rule_definitions
 ),
 
 latest_labels as (
@@ -44,7 +60,7 @@ labs_labels as (
             else 'source_label_unmapped'
         end as classification_status
     from latest_labels as s
-    left join label_mapping as m on s.deck = m.sub_archetype
+    left join label_mapping as m on s.deck = m.source_label
     where s.deck is not null
 ),
 
@@ -53,6 +69,16 @@ deck_cards as (
         participant_id,
         card_name
     from {{ ref('fct_deck_composition') }}
+),
+
+engines as (
+    select
+        d.participant_id,
+        string_agg(e.engine, ', ' order by e.engine_id) as deck_engines
+    from {{ ref('deck_engine_rules') }} as e
+    inner join deck_cards as d on e.card_name_1 = d.card_name
+    inner join deck_cards as d2 on d.participant_id = d2.participant_id and e.card_name_2 = d2.card_name
+    group by d.participant_id
 ),
 
 matches as (
@@ -99,6 +125,7 @@ decks as (
 select
     p.participant_id,
     l.sub_archetype as source_archetype_label,
+    e.deck_engines,
     s.matched_rule_ids,
     s.top_rule_ids,
     v.ruleset_version,
@@ -129,3 +156,4 @@ left join labs_labels as l on p.participant_id = l.participant_id
 left join ranked as r on p.participant_id = r.participant_id and r.selection_rank = 1
 left join match_summary as s on p.participant_id = s.participant_id
 left join decks as d on p.participant_id = d.participant_id
+left join engines as e on p.participant_id = e.participant_id

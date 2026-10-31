@@ -1,0 +1,30 @@
+version: 2
+
+seeds:
+  - name: limitless_archetypes
+    description: "Published Limitless Labs variant-to-main mappings, separate from card classification rules."
+    columns:
+      - name: source_deck_id
+        tests: [unique, not_null]
+      - name: source_label
+        tests: [unique, not_null]
+      - name: archetype_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('limitless_archetypes')
+                field: source_deck_id
+      - name: archetype
+        tests: [not_null]
+  - name: deck_engine_rules
+    description: "Non-exclusive shared engines; both named cards must be present."
+    columns:
+      - name: engine_id
+        tests: [unique, not_null]
+      - name: engine
+        tests: [unique, not_null]
+      - name: card_name_1
+        tests: [not_null]
+      - name: card_name_2
+        tests: [not_null]

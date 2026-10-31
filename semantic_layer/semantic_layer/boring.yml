@@ -467,6 +467,11 @@ deck_classification:
     sub_archetype:
       expr: _.sub_archetype
       description: Selected variant or provider label, null if unclassified.
+    deck_engines:
+      expr: _.deck_engines
+      description: >-
+        Sorted comma-separated shared engines detected from required cards, independent of the published archetype.
+        Null when no configured engine matches; a source label alone does not establish an engine.
     classification_status:
       expr: _.classification_status
       description: matched, ambiguous, unmatched, missing_decklist, or source_label_mapped/unmapped/ambiguous.
