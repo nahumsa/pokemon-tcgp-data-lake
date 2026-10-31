@@ -198,3 +198,30 @@ models:
         description: "Number of contributing player-perspective records."
       - name: duplicate_perspective_record_count
         description: "Extra records per player in the reconciliation group."
+
+  - name: dim_deck_classification
+    description: "Classification coverage and rule provenance for every imported participant. See docs/archetype_classification.md."
+    columns:
+      - name: participant_id
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_participants')
+                field: participant_id
+      - name: classification_status
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [matched, ambiguous, unmatched, missing_decklist, source_label_mapped, source_label_unmapped, source_label_ambiguous]
+      - name: ruleset_version
+        tests:
+          - not_null
+      - name: selected_rule_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('meta_decks')
+                field: rule_id

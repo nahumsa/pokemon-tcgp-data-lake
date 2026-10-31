@@ -261,6 +261,7 @@ def test_card_deck_count_deduplicates_printings_and_card_selections(con):
 
 
 def test_classification_diagnostics_count_every_status(con):
+    con.raw_sql("create schema main_semantic; set schema=main_semantic")
     semantic_model = model(
         con,
         "deck_classification",

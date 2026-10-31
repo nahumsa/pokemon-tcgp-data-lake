@@ -47,6 +47,9 @@ tables: Dict[str, Any] = {
         "mart_tournament_analysis", database="main_consumption"
     ),
     "mart_deck_analysis": con.table("mart_deck_analysis", database="main_consumption"),
+    "dim_deck_classification": con.table(
+        "dim_deck_classification", database="main_semantic"
+    ),
     "dim_cards": con.table("dim_cards", database="main_semantic"),
     "fct_matches": con.table("fct_matches", database="main_semantic"),
     "fct_tournament_matches": con.table("fct_tournament_matches", database="main_semantic"),
