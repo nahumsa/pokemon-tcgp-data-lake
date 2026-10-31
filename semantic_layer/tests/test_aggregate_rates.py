@@ -280,3 +280,27 @@ def test_classification_diagnostics_count_every_status(con):
         "unmatched": 1,
         "missing_decklist": 1,
     }
+
+
+def test_shared_engine_can_span_distinct_limitless_archetypes(con):
+    con.raw_sql("create schema main_semantic; set schema=main_semantic")
+    semantic_model = model(
+        con,
+        "deck_classification",
+        """
+        select * from (values
+            ('v1', 'Mega Venusaur', 'Ogerpon Meganium'),
+            ('v2', 'Mega Venusaur', null),
+            ('h1', 'Ogerpon Meganium', 'Ogerpon Meganium')
+        ) t(participant_id, archetype, deck_engines)
+        """,
+    )
+    result = semantic_model.query(
+        dimensions=["archetype", "deck_engines"], measures=["participants"]
+    ).execute()
+    assert len(result) == 3
+    assert value(
+        semantic_model,
+        "participants",
+        filters=[lambda t: t.deck_engines == "Ogerpon Meganium"],
+    ) == 2

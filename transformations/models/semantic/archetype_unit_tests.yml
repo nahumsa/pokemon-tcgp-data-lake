@@ -23,6 +23,18 @@ unit_tests:
     format: sql
     rows: |
       select 'p1' as participant_id
+  - input: ref('limitless_archetypes')
+    format: sql
+    rows: |
+      select * from (values
+       ('known','Known','parent','Parent'),
+       ('shared-a','Shared','parent-a','Parent A'),
+       ('shared-b','Shared','parent-b','Parent B')
+      ) m(source_deck_id,source_label,archetype_id,archetype)
+  - input: ref('deck_engine_rules')
+    format: sql
+    rows: |
+      select null::varchar as engine_id,null::varchar as engine,null::varchar as card_name_1,null::varchar as card_name_2 where false
   expect:
     rows:
     - participant_id: p1
@@ -51,6 +63,18 @@ unit_tests:
     format: sql
     rows: |
       select 'p1' as participant_id
+  - input: ref('limitless_archetypes')
+    format: sql
+    rows: |
+      select * from (values
+       ('known','Known','parent','Parent'),
+       ('shared-a','Shared','parent-a','Parent A'),
+       ('shared-b','Shared','parent-b','Parent B')
+      ) m(source_deck_id,source_label,archetype_id,archetype)
+  - input: ref('deck_engine_rules')
+    format: sql
+    rows: |
+      select null::varchar as engine_id,null::varchar as engine,null::varchar as card_name_1,null::varchar as card_name_2 where false
   expect:
     rows:
     - participant_id: p1
@@ -88,6 +112,18 @@ unit_tests:
        ('Removed', null, '2')
       ) s(name, deck, _dlt_load_id)
       cross join (select 'https://labs.limitlesstcg.com/0001/standings' as tournament_link) t
+  - input: ref('limitless_archetypes')
+    format: sql
+    rows: |
+      select * from (values
+       ('known','Known','parent','Parent'),
+       ('shared-a','Shared','parent-a','Parent A'),
+       ('shared-b','Shared','parent-b','Parent B')
+      ) m(source_deck_id,source_label,archetype_id,archetype)
+  - input: ref('deck_engine_rules')
+    format: sql
+    rows: |
+      select null::varchar as engine_id,null::varchar as engine,null::varchar as card_name_1,null::varchar as card_name_2 where false
   expect:
     rows:
     - participant_id: variant
@@ -187,6 +223,18 @@ unit_tests:
         ('Removed', null::varchar, '2')
       ) s(name, deck, _dlt_load_id)
       cross join (select 'https://labs.limitlesstcg.com/0001/standings' as tournament_link) t
+  - input: ref('limitless_archetypes')
+    format: sql
+    rows: |
+      select * from (values
+       ('known','Known','parent','Parent'),
+       ('shared-a','Shared','parent-a','Parent A'),
+       ('shared-b','Shared','parent-b','Parent B')
+      ) m(source_deck_id,source_label,archetype_id,archetype)
+  - input: ref('deck_engine_rules')
+    format: sql
+    rows: |
+      select null::varchar as engine_id,null::varchar as engine,null::varchar as card_name_1,null::varchar as card_name_2 where false
   expect:
     rows:
     - participant_id: d4622368ed095a92180bc3734888d4df
@@ -224,6 +272,18 @@ unit_tests:
         ('Mapped', 'New Deck', '2')
       ) s(name, deck, _dlt_load_id)
       cross join (select 'https://labs.limitlesstcg.com/0001/standings' as tournament_link) t
+  - input: ref('limitless_archetypes')
+    format: sql
+    rows: |
+      select * from (values
+       ('known','Known','parent','Parent'),
+       ('shared-a','Shared','parent-a','Parent A'),
+       ('shared-b','Shared','parent-b','Parent B')
+      ) m(source_deck_id,source_label,archetype_id,archetype)
+  - input: ref('deck_engine_rules')
+    format: sql
+    rows: |
+      select null::varchar as engine_id,null::varchar as engine,null::varchar as card_name_1,null::varchar as card_name_2 where false
   expect:
     rows:
     - participant_id: d4622368ed095a92180bc3734888d4df
@@ -255,6 +315,19 @@ unit_tests:
     format: sql
     rows: |
       select * from (values ('Lucario','Lucario Hariyama','2'),('Lopunny','Lopunny Dudunsparce','2'),('Hydrapple','Ogerpon Meganium Hydrapple','2'),('Venusaur','Mega Venusaur','2')) s(name,deck,_dlt_load_id) cross join (select 'https://labs.limitlesstcg.com/0001/standings' as tournament_link) t
+  - input: ref('limitless_archetypes')
+    format: sql
+    rows: |
+      select * from (values
+       ('lucario-hariyama','Lucario Hariyama','mega-lucario-ex','Mega Lucario'),
+       ('lopunny-dudunsparce','Lopunny Dudunsparce','mega-lopunny-ex','Mega Lopunny'),
+       ('ogerpon-meganium-hydrapple','Ogerpon Meganium Hydrapple','ogerpon-meganium','Ogerpon Meganium'),
+       ('mega-venusaur-ex','Mega Venusaur','mega-venusaur-ex','Mega Venusaur')
+      ) m(source_deck_id,source_label,archetype_id,archetype)
+  - input: ref('deck_engine_rules')
+    format: sql
+    rows: |
+      select null::varchar as engine_id,null::varchar as engine,null::varchar as card_name_1,null::varchar as card_name_2 where false
   expect:
     rows:
     - participant_id: bc885d5f7fbc8946fbc1aa843f83e51a
@@ -277,3 +350,52 @@ unit_tests:
       sub_archetype: Mega Venusaur
       source_archetype_label: Mega Venusaur
       classification_status: source_label_mapped
+- name: shared_engine_requires_both_cards_and_preserves_source_archetype
+  model: dim_deck_classification
+  given:
+  - input: ref('meta_decks')
+    format: sql
+    rows: |
+      select 'venusaur' as rule_id,0 as rule_priority,'Mega Venusaur ex' as card_name_1,null::varchar as card_name_2,'Mega Venusaur' as archetype,'Mega Venusaur' as sub_archetype
+  - input: ref('limitless_archetypes')
+    format: sql
+    rows: |
+      select * from (values
+       ('lucario-hariyama','Lucario Hariyama','mega-lucario-ex','Mega Lucario'),
+       ('lopunny-dudunsparce','Lopunny Dudunsparce','mega-lopunny-ex','Mega Lopunny'),
+       ('ogerpon-meganium-hydrapple','Ogerpon Meganium Hydrapple','ogerpon-meganium','Ogerpon Meganium'),
+       ('mega-venusaur-ex','Mega Venusaur','mega-venusaur-ex','Mega Venusaur')
+      ) m(source_deck_id,source_label,archetype_id,archetype)
+  - input: ref('deck_engine_rules')
+    format: sql
+    rows: |
+      select 'ogerpon-meganium' as engine_id,'Ogerpon Meganium' as engine,'Teal Mask Ogerpon ex' as card_name_1,'Meganium' as card_name_2
+  - input: ref('dim_participants')
+    format: sql
+    rows: |
+      select * from (values ('e7b9172ed43ca39ab8de4dba17004670'),('5d1374d9bca326aaeae0f83d68178705'),('only-meganium'),('card-only'),('missing')) p(participant_id)
+  - input: ref('fct_deck_composition')
+    format: sql
+    rows: |
+      select * from (values ('e7b9172ed43ca39ab8de4dba17004670','Teal Mask Ogerpon ex'),('e7b9172ed43ca39ab8de4dba17004670','Teal Mask Ogerpon ex'),('e7b9172ed43ca39ab8de4dba17004670','Meganium'),('e7b9172ed43ca39ab8de4dba17004670','Mega Venusaur ex'),('5d1374d9bca326aaeae0f83d68178705','Mega Venusaur ex'),('5d1374d9bca326aaeae0f83d68178705','Teal Mask Ogerpon ex'),('only-meganium','Meganium'),('card-only','Teal Mask Ogerpon ex'),('card-only','Meganium')) d(participant_id,card_name)
+  - input: source('pokemon_tcg', 'tournament_participants')
+    format: sql
+    rows: |
+      select * from (values ('Engine'),('No engine')) s(name) cross join (select 'Mega Venusaur' as deck,'2' as _dlt_load_id,'https://labs.limitlesstcg.com/0001/standings' as tournament_link) t
+  expect:
+    rows:
+    - participant_id: e7b9172ed43ca39ab8de4dba17004670
+      archetype: Mega Venusaur
+      deck_engines: Ogerpon Meganium
+    - participant_id: 5d1374d9bca326aaeae0f83d68178705
+      archetype: Mega Venusaur
+      deck_engines: null
+    - participant_id: only-meganium
+      archetype: null
+      deck_engines: null
+    - participant_id: card-only
+      archetype: null
+      deck_engines: Ogerpon Meganium
+    - participant_id: missing
+      archetype: null
+      deck_engines: null
