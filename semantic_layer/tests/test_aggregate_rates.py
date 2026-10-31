@@ -258,3 +258,24 @@ def test_card_deck_count_deduplicates_printings_and_card_selections(con):
         value(semantic_model, "total_used", filters=[lambda t: t.card_name == "Tech"])
         == 4
     )
+
+
+def test_classification_diagnostics_count_every_status(con):
+    semantic_model = model(
+        con,
+        "deck_classification",
+        """
+        select * from (values
+            ('p1', 'ambiguous'), ('p2', 'unmatched'), ('p3', 'missing_decklist')
+        ) t(participant_id, classification_status)
+        """,
+    )
+    assert value(semantic_model, "participants") == 3
+    rows = semantic_model.query(
+        dimensions=["classification_status"], measures=["participants"]
+    ).execute()
+    assert dict(zip(rows.classification_status, rows.participants)) == {
+        "ambiguous": 1,
+        "unmatched": 1,
+        "missing_decklist": 1,
+    }
