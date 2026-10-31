@@ -236,3 +236,44 @@ unit_tests:
       sub_archetype: null
       source_archetype_label: null
       classification_status: missing_decklist
+- name: limitless_parent_mapping_is_independent_of_card_rules
+  model: dim_deck_classification
+  given:
+  - input: ref('meta_decks')
+    format: sql
+    rows: |
+      select * from (values ('old-0',0,'Key',null::varchar,'Old family','Lucario Hariyama'),('old-1',0,'Key',null::varchar,'Old family','Lopunny Dudunsparce'),('old-2',0,'Key',null::varchar,'Old family','Ogerpon Meganium Hydrapple'),('old-3',0,'Key',null::varchar,'Old family','Mega Venusaur')) m(rule_id,rule_priority,card_name_1,card_name_2,archetype,sub_archetype)
+  - input: ref('dim_participants')
+    format: sql
+    rows: |
+      select * from (values ('bc885d5f7fbc8946fbc1aa843f83e51a'),('1da598df6fb79fff90f330349e7c486d'),('81997aa5218b7880609a5d1a9d383154'),('ac69c535638751268141b728abcf80e0')) p(participant_id)
+  - input: ref('fct_deck_composition')
+    format: sql
+    rows: |
+      select null::varchar as participant_id,null::varchar as card_name where false
+  - input: source('pokemon_tcg', 'tournament_participants')
+    format: sql
+    rows: |
+      select * from (values ('Lucario','Lucario Hariyama','2'),('Lopunny','Lopunny Dudunsparce','2'),('Hydrapple','Ogerpon Meganium Hydrapple','2'),('Venusaur','Mega Venusaur','2')) s(name,deck,_dlt_load_id) cross join (select 'https://labs.limitlesstcg.com/0001/standings' as tournament_link) t
+  expect:
+    rows:
+    - participant_id: bc885d5f7fbc8946fbc1aa843f83e51a
+      archetype: Mega Lucario
+      sub_archetype: Lucario Hariyama
+      source_archetype_label: Lucario Hariyama
+      classification_status: source_label_mapped
+    - participant_id: 1da598df6fb79fff90f330349e7c486d
+      archetype: Mega Lopunny
+      sub_archetype: Lopunny Dudunsparce
+      source_archetype_label: Lopunny Dudunsparce
+      classification_status: source_label_mapped
+    - participant_id: 81997aa5218b7880609a5d1a9d383154
+      archetype: Ogerpon Meganium
+      sub_archetype: Ogerpon Meganium Hydrapple
+      source_archetype_label: Ogerpon Meganium Hydrapple
+      classification_status: source_label_mapped
+    - participant_id: ac69c535638751268141b728abcf80e0
+      archetype: Mega Venusaur
+      sub_archetype: Mega Venusaur
+      source_archetype_label: Mega Venusaur
+      classification_status: source_label_mapped
