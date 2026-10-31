@@ -10,7 +10,7 @@ Join `participant_id` to `dim_participants` for event and decklist provenance.
 ## Precedence and provenance
 
 1. The latest Labs standing's non-null label overrides card rules. A label maps
-   to a shared parent only if the seed maps it to exactly one distinct parent.
+   through `limitless_archetypes.csv`, independently of the card-rule seed.
    Unknown or ambiguous labels retain their original text as the parent and
    variant. A newer null label does not resurrect an older label. Equal load IDs
    resolve by label ascending with nulls first, so a withdrawal wins a tie. This
@@ -46,11 +46,39 @@ statuses measure classification coverage, not complete decklist coverage. For a
 source-labelled row, `top_candidate_count > 1` describes competing **card** rules;
 the status continues to describe the overriding label.
 
+## Published main archetypes and shared engines
+
+`limitless_archetypes.csv` copies the published `identifier`/`name` to
+`sup_identifier`/`sup_name` relationships from the Limitless Labs Masters deck
+endpoints for [Louisville](https://mew.limitlesstcg.com/labs/data/tcg/decks?tournamentId=0076&division=MA),
+[Nice](https://mew.limitlesstcg.com/labs/data/tcg/decks?tournamentId=0077&division=MA),
+and [Puebla](https://mew.limitlesstcg.com/labs/data/tcg/decks?tournamentId=0078&division=MA),
+retrieved on 2026-10-31. The 113 rows include canonical main entries and cover
+82 main archetypes. They reproduce all 7,470 labelled entrants' grouped totals
+on those events' published metagame pages. This is a checked-in mapping snapshot;
+new provider labels need an explicit update, not a card-rule-based parent guess.
+Provider IDs are retained in the seed; legacy ingested rows join by source label.
+
+`deck_engine_rules.csv` separately describes shared engines. Its initial rule
+requires both `Teal Mask Ogerpon ex` and `Meganium`. The diagnostic/MCP dimension
+`deck_engines` contains the sorted, comma-separated matching engine names, or
+null when no configured engine matches. Duplicate card rows do not repeat a tag.
+Multiple engines may coexist; these tags do not replace the published archetype
+or imply complete engine coverage.
+
+For example, a published `Mega Venusaur` list stays in that main archetype while
+receiving the `Ogerpon Meganium` engine tag if both cards are present. A source
+label alone cannot establish an engine: missing lists and Venusaur builds without
+Meganium receive no such tag. Engine tags are available through
+`deck_classification`; existing classified-only analytical models keep their
+five-column contract.
+
 ## Rule maintenance and historical reports
 
 Do not renumber or reuse `rule_id` values. Add new IDs for new rules and retain
 IDs when correcting a rule's content. The `v1:` ruleset version fingerprints the
-complete seed, including priorities, in stable ID order. Content changes alter
+card rules, published label mappings and engine rules in stable ID order.
+Content changes alter
 the fingerprint; input order alone does not. Bump the algorithm prefix when
 changing classification policy. Git history preserves prior rulesets; rebuilding
 tables reclassifies historical events with the current seed, so archive the
@@ -94,29 +122,21 @@ The raw JSON SHA-256 is
 The snapshot is local and is not committed. `--latest 1` will select a different
 event after newer events complete; a saved snapshot is needed for exact replay.
 
-This environment's combined dlt load hit a directory-rename error after the first
-load. Validation used the **unmodified ingestion CLI** to replay the fetched
-snapshot one table per process with separate local dlt state directories. Each
-replay snapshot retained all four table keys, with only its selected table
-populated. No synthetic tournament rows were substituted. A normal environment
-can reload the original snapshot with `--from-snapshot` instead.
+The original full dataset was imported through the ingestion program. During
+mapping validation, a fresh full replay hit malformed intermediate JSON in dlt's
+child-card load. Validation reused that previously verified full database and
+successfully replayed the 15 real Mega Venusaur decklists through the unmodified
+ingestion CLI into an isolated copy. The complete raw deck-card multiset still
+matched the saved snapshot afterward. No synthetic event rows were substituted.
 
-All 26 models rebuilt. The diagnostic table contains 1,200 mapped labels, 1,022
-unmapped labels, and 12 missing lists; the existing classified table still has
-2,222 rows. Comparing all five legacy columns against the pre-change classifier
-on this same data found zero differences.
+All 26 models rebuilt and 110 data tests plus 19 unit tests passed; the Python
+suite passed 34 tests. All 2,222 published labels now map to the provider's main
+archetypes, with 12 entrants still missing lists/labels. Puebla's grouped counts
+include 171 Alakazam, 93 Mega Lucario, 39 Mega Lopunny, 94 Ogerpon Meganium and
+15 Mega Venusaur, matching Limitless's grouped page. The classified population
+remains 2,222; changing the parent groups is intentional.
 
-A separate validation-only execution suppressed provider labels to exercise card
-rules on the same real decks: 1,229 matched, 437 ambiguous, 556 unmatched, and 12
-missing lists. It also preserved every pre-change classified result. These are
-card-rule diagnostics, not the event's authoritative published classifications.
-Reversing seed order produced zero diagnostic differences in both modes, and
-editing a priority changed the fingerprint. The final ruleset is
-`v1:344e2a634e798296850a99b98eb8465a`.
-
-The full dbt suite passed 97 data tests and 15 unit tests. The Python ingestion and
-semantic suite passed 32 tests. Ruff, SQLFluff on changed SQL, and dbt parsing
-passed. Unit fixtures cover priority, ID tie-breaking, variant precedence,
-repeated card rows, source overrides, ambiguous/unmapped labels, removal of an
-old label, unmatched decks, and missing lists. The two initial priority/ID tests
-were first observed failing against the original classifier.
+The shared Ogerpon Meganium engine matches 72 Hydrapple lists, 22 Arboliva lists
+and 14 of the 15 Mega Venusaur lists. The remaining Venusaur list lacks Meganium
+and is not tagged. The ruleset remains `v1`, with content fingerprint
+`abb27c5c36f75bff56e766405f747f11`.
