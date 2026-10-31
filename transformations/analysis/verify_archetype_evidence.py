@@ -28,14 +28,18 @@ LEGACY_COLUMNS = "participant_id, archetype, sub_archetype, source_archetype_lab
 BASELINE = "11863bd8085c80a76753131268aa072ef1d801a9"
 
 
-def snapshot_counts(path, expected_sha256):
+def load_snapshot(path, expected_sha256):
     data = gzip.decompress(path.read_bytes())
     observed = hashlib.sha256(data).hexdigest()
     if observed != expected_sha256:
         raise ValueError(
             f"Snapshot SHA-256 mismatch: expected {expected_sha256}, got {observed}"
         )
-    rows = json.loads(data)
+    return json.loads(data)
+
+
+def snapshot_counts(path, expected_sha256):
+    rows = load_snapshot(path, expected_sha256)
     return {table: len(rows[table]) for table in TABLES}
 
 
@@ -163,7 +167,8 @@ def require(condition, message):
 
 
 def verify(database, snapshot, expected_sha256, baseline_ref):
-    counts = snapshot_counts(snapshot, expected_sha256)
+    snapshot_rows = load_snapshot(snapshot, expected_sha256)
+    counts = {table: len(snapshot_rows[table]) for table in TABLES}
     baseline = git_text("rev-parse", "--verify", f"{baseline_ref}^{{commit}}")
     old_sql = git_text(
         "show", f"{baseline}:transformations/models/semantic/dim_deck_archetypes.sql"
@@ -189,7 +194,6 @@ def verify(database, snapshot, expected_sha256, baseline_ref):
             observed_counts == counts,
             f"Database raw row counts differ from snapshot: {observed_counts}",
         )
-        snapshot_rows = json.loads(gzip.decompress(snapshot.read_bytes()))
         verify_snapshot_contents(con, snapshot_rows)
         verify_rebuilt_inputs(con)
         committed_rules = list(
