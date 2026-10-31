@@ -148,6 +148,13 @@ For match-level modeling, join `fct_matches` to `dim_tournaments` on
 online and in-person populations can be filtered separately or deliberately pooled.
 Win rates pool wins and match counts instead of averaging subgroup percentages.
 
+### Archetype classification
+
+See the [classification contract](transformations/docs/archetype_classification.md)
+for rule precedence, stable IDs, ruleset versions, and classification coverage.
+The `deck_classification` semantic model includes ambiguous and unclassified
+entrants; existing archetype analytics retain their classified-only population.
+
 ### Tournament match counts
 
 Use `tournament_analysis.unique_match_count` for observed played pairings and
