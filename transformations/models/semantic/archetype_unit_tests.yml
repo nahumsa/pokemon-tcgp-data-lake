@@ -1,0 +1,47 @@
+# These exercise the production classifier with isolated inputs, without saved data.
+unit_tests:
+  - name: archetype_priority_overrides_alphabetical_order
+    model: dim_deck_archetypes
+    given:
+      - input: ref('meta_decks')
+        format: sql
+        rows: |
+          select * from (values
+            ('r-a', 0, 'Key', null::varchar, 'Alpha', 'Alpha'),
+            ('r-z', 10, 'Key', null::varchar, 'Zulu', 'Zulu')
+          ) m(rule_id, rule_priority, card_name_1, card_name_2, archetype, sub_archetype)
+      - input: ref('fct_deck_composition')
+        format: sql
+        rows: |
+          select 'p1' as participant_id, 'Key' as card_name
+      - input: source('pokemon_tcg', 'tournament_participants')
+        format: sql
+        rows: |
+          select null::varchar as name, null::varchar as tournament_link,
+            null::varchar as deck, null::varchar as _dlt_load_id where false
+    expect:
+      rows:
+        - {participant_id: p1, archetype: Zulu, sub_archetype: Zulu}
+
+  - name: archetype_stable_rule_id_resolves_equal_priority
+    model: dim_deck_archetypes
+    given:
+      - input: ref('meta_decks')
+        format: sql
+        rows: |
+          select * from (values
+            ('r-z', 0, 'Key', null::varchar, 'Alpha', 'Alpha'),
+            ('r-a', 0, 'Key', null::varchar, 'Zulu', 'Zulu')
+          ) m(rule_id, rule_priority, card_name_1, card_name_2, archetype, sub_archetype)
+      - input: ref('fct_deck_composition')
+        format: sql
+        rows: |
+          select 'p1' as participant_id, 'Key' as card_name
+      - input: source('pokemon_tcg', 'tournament_participants')
+        format: sql
+        rows: |
+          select null::varchar as name, null::varchar as tournament_link,
+            null::varchar as deck, null::varchar as _dlt_load_id where false
+    expect:
+      rows:
+        - {participant_id: p1, archetype: Zulu, sub_archetype: Zulu}
