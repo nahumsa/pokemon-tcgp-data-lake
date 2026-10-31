@@ -5,7 +5,7 @@ with meta as (
 ruleset as (
     -- Hash rule content in stable ID order; changing precedence changes the version.
     select
-        'v1:' || md5(coalesce(string_agg(
+        'v2:' || md5(coalesce(string_agg(
             cast(row(rule_id, rule_priority, card_name_1, card_name_2, archetype, sub_archetype) as varchar),
             '|' order by rule_id
         ), '')) as ruleset_version
@@ -27,8 +27,9 @@ latest_labels as (
         deck
     from {{ source('pokemon_tcg', 'tournament_participants') }}
     where tournament_link like 'https://labs.limitlesstcg.com/%'
+    -- With equally fresh conflicting rows, a withdrawal wins; otherwise use label order.
     qualify row_number() over (
-        partition by participant_id order by _dlt_load_id desc
+        partition by participant_id order by _dlt_load_id desc, deck asc nulls first
     ) = 1
 ),
 
