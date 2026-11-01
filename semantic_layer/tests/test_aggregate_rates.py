@@ -258,30 +258,3 @@ def test_card_deck_count_deduplicates_printings_and_card_selections(con):
         value(semantic_model, "total_used", filters=[lambda t: t.card_name == "Tech"])
         == 4
     )
-
-
-def test_card_association_model_exposes_both_groups_and_evidence_status(con):
-    semantic_model = model(
-        con,
-        "matchup_suggestions",
-        """
-        select 'PTCG' as game, 'STANDARD' as format,
-            'insufficient_decks' as evidence_status,
-            10 as min_matches_per_group, 3 as min_decks_per_group,
-            12 as sample_size, 15 as matches_without_card,
-            1 as decks_with_card, 2 as decks_without_card,
-            6 as wins_with_card, 3 as wins_without_card
-        """,
-    )
-    result = semantic_model.query(
-        dimensions=["game", "format", "evidence_status", "min_decks_per_group"],
-        measures=[
-            "sample_size",
-            "matches_without_card",
-            "decks_with_card",
-            "decks_without_card",
-        ],
-    ).execute()
-    assert result.iloc[0]["evidence_status"] == "insufficient_decks"
-    assert result.iloc[0]["matches_without_card"] == 15
-    assert result.iloc[0]["decks_without_card"] == 2

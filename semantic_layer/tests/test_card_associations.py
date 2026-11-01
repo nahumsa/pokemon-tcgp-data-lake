@@ -4,6 +4,9 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import duckdb
+import ibis
+import yaml
+from boring_semantic_layer import from_config
 import pytest
 from jinja2 import Environment, StrictUndefined
 
@@ -26,14 +29,6 @@ def con():
             create table fct_deck_composition(
                 participant_id varchar, card_name varchar, card_kind varchar, quantity int
             );
-            create table int_classified_deck_cards(
-                participant_id varchar, card_name varchar, card_kind varchar, quantity int,
-                set_name varchar, source varchar, event_type varchar
-            );
-            create table mart_archetype_card_staples(
-                set_name varchar, source varchar, event_type varchar,
-                archetype varchar, card_name varchar, card_kind varchar, inclusion_rate double
-            )
         """)
         yield connection
 
@@ -65,17 +60,6 @@ def entry(con, name, results, tech=False, published=True, **cohort):
             con.execute(
                 "insert into fct_deck_composition values (?, ?, 'trainer', ?)",
                 [name, card, quantity],
-            )
-            con.execute(
-                "insert into int_classified_deck_cards values (?, ?, 'trainer', ?, ?, ?, ?)",
-                [
-                    name,
-                    card,
-                    quantity,
-                    values["set_name"],
-                    values["source"],
-                    values["event_type"],
-                ],
             )
 
 
@@ -216,3 +200,39 @@ def test_no_results_do_not_invent_associations(con):
     entry(con, "no-history", [], tech=True)
     build(con)
     assert con.execute("select count(*) from associations").fetchone()[0] == 0
+
+
+def test_semantic_model_exposes_both_groups_and_evidence_status():
+    config = yaml.safe_load(
+        (ROOT / "semantic_layer/semantic_layer/boring.yml").read_text()
+    )["matchup_suggestions"]
+    connection = ibis.duckdb.connect()
+    try:
+        connection.raw_sql(
+            "create schema main_consumption; set schema=main_consumption"
+        )
+        connection.raw_sql("""
+            create table mart_archetype_matchup_suggestions as select
+                'PTCG' as game, 'STANDARD' as format,
+                'insufficient_decks' as evidence_status,
+                3 as min_decks_per_group, 12 as sample_size,
+                15 as matches_without_card, 1 as decks_with_card, 2 as decks_without_card
+        """)
+        semantic_model = from_config(
+            {"matchup_suggestions": config},
+            tables={config["table"]: connection.table(config["table"])},
+        )["matchup_suggestions"]
+        result = semantic_model.query(
+            dimensions=["game", "format", "evidence_status", "min_decks_per_group"],
+            measures=[
+                "sample_size",
+                "matches_without_card",
+                "decks_with_card",
+                "decks_without_card",
+            ],
+        ).execute()
+        assert result.iloc[0]["evidence_status"] == "insufficient_decks"
+        assert result.iloc[0]["matches_without_card"] == 15
+        assert result.iloc[0]["decks_without_card"] == 2
+    finally:
+        connection.disconnect()

@@ -167,53 +167,69 @@ models:
   - name: win_rate
     description: Overall win rate across all matches.
 - name: mart_archetype_matchup_suggestions
-  description: Data-driven card suggestions to improve an archetype's performance against difficult opponents, including quantity
-    analysis and significance filtering.
+  description: Observed card associations with both comparison groups, published-list coverage and explicit sample thresholds; not causal effects or optimized quantities.
   columns:
   - name: set_name
-    description: The name of the set or meta period.
+    tests: [not_null]
+  - name: game
+    description: Current supported importer scope, Pokemon TCG only.
     tests:
     - not_null
+    - accepted_values:
+        arguments:
+          values: [PTCG]
+  - name: format
+    tests: [not_null]
   - name: archetype
-    description: The archetype for which suggestions are provided.
-    tests:
-    - not_null
+    tests: [not_null]
   - name: opponent_archetype
-    description: The difficult opponent archetype.
-    tests:
-    - not_null
+    tests: [not_null]
   - name: suggested_card
-    description: The card suggested to improve the matchup.
+    description: Legacy name for the observed card; not a recommendation.
+    tests: [not_null]
+  - name: evidence_status
     tests:
     - not_null
-  - name: card_kind
-    description: Type of card (Pokemon, Trainer, Energy).
+    - accepted_values:
+        arguments:
+          values: [missing_comparison_group, insufficient_matches, insufficient_decks, meets_sample_thresholds]
+  - name: association_rank
+    description: Within-cohort descriptive rank; null until both comparison groups meet sample thresholds.
   - name: sample_size
-    description: Number of matches in this matchup where the archetype included the card.
-  - name: win_rate_with_card
-    description: Win rate of the archetype against the opponent when the suggested card is included.
-  - name: win_rate_without_card
-    description: Win rate of the archetype against the opponent when the suggested card is NOT included.
-  - name: relevance_score
-    description: Difference between win rate with and without the card.
+    description: With-card valid player-result observations, including draws.
+  - name: matches_without_card
+    description: Without-card valid player-result observations from published own lists only.
+  - name: decks_with_card
+    description: Distinct with-card tournament entries, not independent pilots.
+  - name: decks_without_card
+    description: Distinct without-card tournament entries.
+  - name: decklist_match_coverage
+    description: Covered results / valid classified matchup results, as a percentage; repeated per card.
   - name: suggested_quantity
-    description: Average quantity of the card found in winning decks for this matchup.
+    description: Legacy descriptive quantity from observed lists, weighted once per win; not an optimized prescription.
   - name: source
-    tests:
-    - not_null
+    tests: [not_null]
   - name: event_type
-    tests:
-    - not_null
+    tests: [not_null]
   tests:
   - dbt_utils.unique_combination_of_columns:
       arguments:
-        combination_of_columns:
-        - set_name
-        - source
-        - event_type
-        - archetype
-        - opponent_archetype
-        - suggested_card
+        combination_of_columns: [game, format, set_name, source, event_type, archetype, opponent_archetype, suggested_card]
+  - dbt_utils.expression_is_true:
+      arguments:
+        expression: sample_size + matches_without_card = matches_with_decklists
+  - dbt_utils.expression_is_true:
+      arguments:
+        expression: wins_with_card + losses_with_card + ties_with_card = sample_size
+  - dbt_utils.expression_is_true:
+      arguments:
+        expression: wins_without_card + losses_without_card + ties_without_card = matches_without_card
+  - dbt_utils.expression_is_true:
+      arguments:
+        expression: (association_rank is not null) = (evidence_status = 'meets_sample_thresholds')
+  - dbt_utils.expression_is_true:
+      arguments:
+        expression: decklist_match_coverage between 0 and 100
 - name: mart_monthly_populations
   tests:
   - dbt_utils.unique_combination_of_columns:
