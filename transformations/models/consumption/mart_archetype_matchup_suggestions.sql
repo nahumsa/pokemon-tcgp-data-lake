@@ -1,163 +1,140 @@
+{% set min_matches = var('association_min_matches', 10) %}
+{% set min_decks = var('association_min_decks', 3) %}
+{% if min_matches is not integer or min_decks is not integer or min_matches < 1 or min_decks < 1 %}
+    {{ exceptions.raise_compiler_error('Association sample thresholds must be positive integers') }}
+{% endif %}
+
 with deck_cards as (
     select
-        set_name,
-        source,
-        event_type,
         participant_id,
         card_name,
         min(card_kind) as card_kind,
         sum(quantity) as quantity
-    from {{ ref('int_classified_deck_cards') }}
-    group by 1, 2, 3, 4, 5
+    from {{ ref('fct_deck_composition') }}
+    where quantity > 0
+    group by 1, 2
 ),
 
-cohort_decks as (
-    select
-        set_name,
-        source,
-        event_type,
-        count(distinct participant_id) as total_decks
-    from deck_cards
-    group by 1, 2, 3
-),
-
-global_staples as (
-    -- Unique membership by functional card, not one row per printing.
-    select
-        d.set_name,
-        d.source,
-        d.event_type,
-        d.card_name,
-        p.total_decks,
-        count(distinct d.participant_id) * 100.0 / p.total_decks as inclusion_rate
-    from deck_cards as d
-    inner join cohort_decks as p
-        on d.set_name is not distinct from p.set_name and d.source = p.source and d.event_type = p.event_type
-    group by 1, 2, 3, 4, 5
-),
-
-matches_with_meta as (
-    select
+matches as (
+    -- Both supported importers currently load Pokemon TCG, not Pocket.
+    -- Keep known formats and periods separate; do not invent unknown cohorts.
+    select distinct
         m.match_id,
         m.participant_id,
         m.result,
-        a1.archetype as p1_archetype,
-        a2.archetype as p2_archetype,
+        a1.archetype,
+        a2.archetype as opponent_archetype,
+        'PTCG' as game,
         t.set_name,
         t.source,
-        t.event_type
+        t.event_type,
+        upper(trim(t.format)) as format,
+        exists(
+            select 1 from deck_cards as d
+            where d.participant_id = m.participant_id
+        ) as has_decklist
     from {{ ref('fct_matches') }} as m
     inner join {{ ref('dim_deck_archetypes') }} as a1 on m.participant_id = a1.participant_id
     inner join {{ ref('dim_deck_archetypes') }} as a2 on m.opponent_id = a2.participant_id
     inner join {{ ref('int_tournament_context') }} as t on m.tournament_id = t.tournament_id
+    where
+        m.result in ('WIN', 'LOSS', 'TIE')
+        and t.set_name is not null and nullif(trim(t.format), '') is not null
 ),
 
-difficult_matchups as (
+cohort_totals as (
     select
+        game,
+        format,
         set_name,
         source,
         event_type,
-        p1_archetype,
-        p2_archetype,
-        count(*) as total_matches,
-        sum(case when result = 'WIN' then 1 else 0 end) * 1.0 / count(*) as win_rate
-    from matches_with_meta
-    group by 1, 2, 3, 4, 5
-    having count(*) >= 10 and win_rate < 0.50
+        archetype,
+        opponent_archetype,
+        count(*) as recorded_match_count,
+        count(*) filter (where has_decklist) as matches_with_decklists,
+        count(distinct participant_id) filter (where has_decklist) as decks_with_results,
+        count(*) filter (where has_decklist and result = 'WIN') as total_wins,
+        count(*) filter (where has_decklist and result = 'LOSS') as total_losses,
+        count(*) filter (where has_decklist and result = 'TIE') as total_ties
+    from matches
+    group by 1, 2, 3, 4, 5, 6, 7
 ),
 
-participant_cards as (
+card_stats as (
     select
-        m.*,
-        d.card_name,
-        d.card_kind,
-        d.quantity
-    from matches_with_meta as m
-    inner join difficult_matchups as dm
-        on
-            m.set_name is not distinct from dm.set_name and m.source = dm.source and m.event_type = dm.event_type
-            and m.p1_archetype = dm.p1_archetype and m.p2_archetype = dm.p2_archetype
+        m.game,
+        m.format,
+        m.set_name,
+        m.source,
+        m.event_type,
+        m.archetype,
+        m.opponent_archetype,
+        d.card_name as suggested_card,
+        min(d.card_kind) as card_kind,
+        count(*) as sample_size,
+        count(distinct m.participant_id) as decks_with_card,
+        count(*) filter (where m.result = 'WIN') as wins_with_card,
+        count(*) filter (where m.result = 'LOSS') as losses_with_card,
+        count(*) filter (where m.result = 'TIE') as ties_with_card,
+        sum(case when m.result = 'WIN' then d.quantity else 0 end) as quantity_in_wins
+    from matches as m
     inner join deck_cards as d on m.participant_id = d.participant_id
+    group by 1, 2, 3, 4, 5, 6, 7, 8
 ),
 
-card_matchup_stats as (
+comparison_counts as (
     select
-        set_name,
-        source,
-        event_type,
-        p1_archetype,
-        p2_archetype,
-        card_name,
-        min(card_kind) as card_kind,
-        count(distinct case when result = 'WIN' then match_id end) as wins_with_card,
-        count(distinct match_id) as total_matches_with_card,
-        sum(case when result = 'WIN' then quantity else 0 end) as quantity_in_wins
-    from participant_cards
-    group by 1, 2, 3, 4, 5, 6
-),
-
-matchup_totals as (
-    select
-        set_name,
-        source,
-        event_type,
-        p1_archetype,
-        p2_archetype,
-        count(distinct match_id) as total_matches,
-        count(distinct case when result = 'WIN' then match_id end) as total_wins
-    from participant_cards
-    group by 1, 2, 3, 4, 5
-),
-
-results as (
-    select
-        c.set_name,
-        c.source,
-        c.event_type,
-        c.p1_archetype as archetype,
-        c.p2_archetype as opponent_archetype,
-        c.card_name as suggested_card,
-        c.card_kind,
-        c.total_matches_with_card as sample_size,
-        c.wins_with_card,
-        c.quantity_in_wins,
-        t.total_matches - c.total_matches_with_card as matches_without_card,
+        c.*,
+        t.recorded_match_count,
+        t.matches_with_decklists,
+        t.decks_with_results - c.decks_with_card as decks_without_card,
+        t.matches_with_decklists - c.sample_size as matches_without_card,
         t.total_wins - c.wins_with_card as wins_without_card,
-        round(c.wins_with_card * 100.0 / c.total_matches_with_card, 2) as win_rate_with_card,
-        round(
-            (t.total_wins - c.wins_with_card) * 100.0
-            / nullif(t.total_matches - c.total_matches_with_card, 0), 2
-        ) as win_rate_without_card,
-        round(c.quantity_in_wins * 1.0 / nullif(c.wins_with_card, 0), 1) as suggested_quantity
-    from card_matchup_stats as c
-    inner join matchup_totals as t
+        t.total_losses - c.losses_with_card as losses_without_card,
+        t.total_ties - c.ties_with_card as ties_without_card,
+        {{ min_matches }} as min_matches_per_group,
+        {{ min_decks }} as min_decks_per_group
+    from card_stats as c
+    inner join cohort_totals as t
         on
-            c.set_name is not distinct from t.set_name and c.source = t.source and c.event_type = t.event_type
-            and c.p1_archetype = t.p1_archetype and c.p2_archetype = t.p2_archetype
-    where c.total_matches_with_card >= 3
+            c.game = t.game and c.format = t.format and c.set_name = t.set_name
+            and c.source = t.source and c.event_type = t.event_type
+            and c.archetype = t.archetype and c.opponent_archetype = t.opponent_archetype
+
+),
+
+rates as (
+    select
+        *,
+        100.0 * wins_with_card / nullif(sample_size, 0) as win_rate_with_card,
+        100.0 * wins_without_card / nullif(matches_without_card, 0) as win_rate_without_card,
+        100.0 * matches_with_decklists / nullif(recorded_match_count, 0) as decklist_match_coverage,
+        quantity_in_wins * 1.0 / nullif(wins_with_card, 0) as suggested_quantity,
+        case
+            when matches_without_card = 0 then 'missing_comparison_group'
+            when sample_size < min_matches_per_group or matches_without_card < min_matches_per_group
+                then 'insufficient_matches'
+            when decks_with_card < min_decks_per_group or decks_without_card < min_decks_per_group
+                then 'insufficient_decks'
+            else 'meets_sample_thresholds'
+        end as evidence_status
+    from comparison_counts
+),
+
+associations as (
+    select
+        *,
+        win_rate_with_card - win_rate_without_card as relevance_score
+    from rates
 )
 
 select
-    r.*,
-    r.win_rate_with_card - r.win_rate_without_card as relevance_score
-from results as r
-left join {{ ref('mart_archetype_card_staples') }} as a
-    on
-        r.set_name is not distinct from a.set_name and r.source = a.source and r.event_type = a.event_type
-        and r.archetype = a.archetype and r.suggested_card = a.card_name and r.card_kind = a.card_kind
-left join global_staples as g
-    on
-        r.set_name is not distinct from g.set_name and r.source = g.source and r.event_type = g.event_type
-        and r.suggested_card = g.card_name
-where
-    (a.inclusion_rate is null or a.inclusion_rate < 50)
-    and (g.inclusion_rate is null or g.inclusion_rate < 50)
-    and r.win_rate_with_card - r.win_rate_without_card > 5
-    and r.suggested_card not in (
-        'Fire Energy', 'Water Energy', 'Grass Energy', 'Lightning Energy',
-        'Psychic Energy', 'Fighting Energy', 'Darkness Energy', 'Metal Energy'
-    )
-qualify row_number() over (
-    partition by r.set_name, r.source, r.event_type, r.archetype, r.opponent_archetype
-    order by relevance_score desc, r.sample_size desc, r.suggested_card asc
-) <= 5
+    *,
+    case
+        when evidence_status = 'meets_sample_thresholds' then row_number() over (
+            partition by game, format, set_name, source, event_type, archetype, opponent_archetype, evidence_status
+            order by relevance_score desc, sample_size desc, suggested_card asc
+        )
+    end as association_rank
+from associations
