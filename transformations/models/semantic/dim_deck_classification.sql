@@ -27,8 +27,9 @@ latest_labels as (
         deck
     from {{ source('pokemon_tcg', 'tournament_participants') }}
     where tournament_link like 'https://labs.limitlesstcg.com/%'
+    -- With equally fresh conflicting rows, a withdrawal wins; otherwise use label order.
     qualify row_number() over (
-        partition by participant_id order by _dlt_load_id desc
+        partition by participant_id order by _dlt_load_id desc, deck asc nulls first
     ) = 1
 ),
 

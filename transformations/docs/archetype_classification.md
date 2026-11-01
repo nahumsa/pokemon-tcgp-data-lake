@@ -12,7 +12,9 @@ Join `participant_id` to `dim_participants` for event and decklist provenance.
 1. The latest Labs standing's non-null label overrides card rules. A label maps
    to a shared parent only if the seed maps it to exactly one distinct parent.
    Unknown or ambiguous labels retain their original text as the parent and
-   variant. A newer null label does not resurrect an older label.
+   variant. A newer null label does not resurrect an older label. Equal load IDs
+   resolve by label ascending with nulls first, so a withdrawal wins a tie. This
+   fallback is deterministic; it does not identify the authoritative source row.
 2. For card rules, both required cards must exist. Matching two-card variants
    beat one-card base rules, regardless of priority. Reprints/repeated card rows
    cannot multiply a rule match.
