@@ -259,3 +259,20 @@ Our GitHub Actions pipeline (`.github/workflows/ci.yml`) runs Ruff, dbt project 
 
 ---
 
+
+
+## Validate an analytical answer
+
+Follow the [analysis validation workflow](docs/analysis_validation.md) before
+returning analytical conclusions. It checks question scope, populations, metric
+choice, aggregation, stratified comparisons, evidence, and limits on inference.
+
+```bash
+uv run python scripts/validate.py
+uv run python scripts/validate.py --analysis docs/analysis_example.json
+```
+
+The second command also checks a structured claim/evidence record. The supplied
+record is a synthetic example. Logs and JUnit results go to `validation-results/`;
+CI runs the same routine and uploads those results. See the
+[review and improvement report](docs/validation_review.md) for findings and gaps.

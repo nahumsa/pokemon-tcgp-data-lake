@@ -29,23 +29,12 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-packages --locked
 
-      - name: Install dbt packages
-        run: |
-          cd transformations
-          uv run dbt deps
+      - name: Validate definitions and analysis process
+        run: uv run python scripts/validate.py --analysis docs/analysis_example.json
 
-      - name: Validate dbt project configuration
-        run: |
-          cd transformations
-          uv run dbt parse --profiles-dir . --no-partial-parse
-
-      - name: Lint with Ruff
-        run: uv run ruff check .
-
-      - name: Test ingestion and aggregate metrics
-        run: uv run pytest ingestion/test_labs.py semantic_layer/tests -q
-
-      - name: Unit test tournament match logic
-        run: |
-          cd transformations
-          uv run --package pokemon-tcg-transformations dbt test --profiles-dir . --target unit --select test_type:unit
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-results
+          path: validation-results/

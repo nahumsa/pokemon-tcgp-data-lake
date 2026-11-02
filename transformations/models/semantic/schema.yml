@@ -70,15 +70,15 @@ models:
         tests:
           - unique
           - not_null
-      - name: name
+      - name: tournament_name
         description: "Name of the tournament."
-      - name: date
+      - name: tournament_date
         description: "Date when the tournament was held."
       - name: format
         description: "Tournament format (e.g., Standard)."
-      - name: players
+      - name: player_count
         description: "Number of players in the tournament."
-      - name: winner
+      - name: winner_name
         description: "Name of the tournament winner."
 
   - name: dim_deck_archetypes
@@ -156,7 +156,7 @@ models:
         tests:
           - accepted_values:
               arguments:
-                values: ["WIN", "LOSS", "TIE"]
+                values: ["WIN", "LOSS", "TIE", "BYE"]
 
   - name: dim_pokemon_sets
     description: "Dimension table containing Pokémon TCG expansion sets and their legality dates."
@@ -225,3 +225,4 @@ models:
               arguments:
                 to: ref('meta_decks')
                 field: rule_id
+
