@@ -9,9 +9,9 @@ UV ?= uv
 DBT = $(UV) run --locked --package pokemon-tcg-transformations dbt
 SQL_PATHS ?= models
 
-.PHONY: check-paths help setup dbt-deps check lint lint-sql parse test-python test-sql dbt-build dbt-test ingest ingest-labs
+.PHONY: check-paths help setup dbt-deps check lint lint-sql parse test-python test-sql dbt-build dbt-test ingest ingest-labs mcp-check mcp
 help:
-	@printf '%s\n' 'setup        Install locked workspace and dbt dependencies' 'check        Run the same data-independent checks as CI' 'lint         Check Python with Ruff' 'parse        Validate dbt project configuration' 'lint-sql     Check SQL_PATHS with SQLFluff (default: models)' 'test-python  Test ingestion and semantic Python logic' 'test-sql     Run native dbt unit tests in memory' 'dbt-build    Seed and build models against the configured database' 'dbt-test     Run data tests against a built database' 'ingest       Run the Play importer with optional INGEST_ARGS' 'ingest-labs  Run the Labs importer with optional INGEST_ARGS'
+	@printf '%s\n' 'setup        Install locked workspace and dbt dependencies' 'check        Run the same data-independent checks as CI' 'lint         Check Python with Ruff' 'parse        Validate dbt project configuration' 'lint-sql     Check SQL_PATHS with SQLFluff (default: models)' 'test-python  Test ingestion and semantic Python logic' 'test-sql     Run native dbt unit tests in memory' 'dbt-build    Seed and build models against the configured database' 'dbt-test     Run data tests against a built database' 'ingest       Run the Play importer with optional INGEST_ARGS' 'ingest-labs  Run the Labs importer with optional INGEST_ARGS' 'mcp-check    Check existing database and semantic model readiness' 'mcp          Start the read-only semantic MCP server'
 
 setup:
 	cd "$(ROOT)" && $(UV) sync --all-packages --locked
@@ -54,3 +54,9 @@ ingest: check-paths
 
 ingest-labs: check-paths
 	cd "$(ROOT)" && $(UV) run --locked --package pokemon-tcg-ingestion python -m ingestion.labs $(INGEST_ARGS)
+
+mcp-check: check-paths
+	cd "$(ROOT)" && $(UV) run --locked --package pokemon-tcg-semantic-layer python -m semantic_layer.mcp_server --check
+
+mcp: check-paths
+	cd "$(ROOT)" && $(UV) run --locked --package pokemon-tcg-semantic-layer python -m semantic_layer.mcp_server

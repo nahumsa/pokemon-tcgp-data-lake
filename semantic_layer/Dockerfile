@@ -30,4 +30,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app"
 
 # Point to the new location of the mcp_server script
-ENTRYPOINT ["python", "semantic_layer/semantic_layer/mcp_server.py"]
+ENTRYPOINT ["python", "-m", "semantic_layer.mcp_server"]
