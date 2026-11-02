@@ -176,3 +176,43 @@ def test_failed_raw_load_is_recorded_and_raised(monkeypatch):
     with pytest.raises(RuntimeError, match="Load failed"):
         labs.load_rows({AUDIT_TABLE: audits})
     record.assert_called_once_with(pipeline, audits, load_status="failed")
+
+
+def test_first_failed_event_can_load_into_a_fresh_database(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    import dlt
+    import duckdb
+
+    from ingestion import labs
+    from ingestion.coverage import AUDIT_TABLE
+
+    monkeypatch.setenv("RUNTIME__DLTHUB_TELEMETRY", "false")
+    monkeypatch.setenv("NORMALIZE__WORKERS", "1")
+    monkeypatch.setenv("LOAD__WORKERS", "1")
+    database = tmp_path / "failed_event.duckdb"
+    pipeline = dlt.pipeline(
+        pipeline_name="failed_event_test",
+        pipelines_dir=str(tmp_path / "state"),
+        destination=dlt.destinations.duckdb(str(database)),
+        dataset_name=labs.PIPELINE_DATASET_NAME,
+    )
+    monkeypatch.setattr(
+        labs, "dlt", SimpleNamespace(pipeline=lambda **kwargs: pipeline)
+    )
+    rows = {table: [] for table in labs.TABLE_KEYS}
+    rows[AUDIT_TABLE] = [
+        build_audit({"tournament_page": "labs/failed"}, errors=["event"])
+    ]
+    labs.load_rows(rows)
+    with duckdb.connect(str(database), read_only=True) as con:
+        for table in labs.TABLE_KEYS:
+            assert (
+                con.execute(
+                    f"select count(*) from pokemon_tcg_data.{table}"
+                ).fetchone()[0]
+                == 0
+            )
+        assert con.execute(
+            "select extraction_status, load_status from pokemon_tcg_data.ingestion_event_runs"
+        ).fetchall() == [("failed", "success")]
