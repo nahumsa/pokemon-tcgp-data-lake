@@ -35,21 +35,24 @@ def test_complete_fresh_event_is_ready(complete_event):
     assert check_readiness(complete_event, now=NOW) == {"ready": True, "reasons": []}
 
 
-@pytest.mark.parametrize("field,value,reason", [
-    ("source_completed", False, "event_not_completed"),
-    ("source_completed", None, "event_not_completed"),
-    ("latest_extraction_status", "failed", "extraction_not_successful"),
-    ("latest_load_status", "failed", "load_not_successful"),
-    ("expected_participant_count", None, "participant_count_unknown"),
-    ("observed_participant_count", 1, "participant_count_mismatch"),
-    ("latest_participant_count", 1, "participant_count_mismatch"),
-    ("decklist_coverage_pct", 0, "decklist_coverage_below_threshold"),
-    ("history_coverage_pct", None, "history_coverage_unknown"),
-    ("classification_coverage_pct", 50, "classification_coverage_below_threshold"),
-    ("extracted_at", "2026-10-20T10:00:00+00:00", "extraction_stale"),
-    ("extracted_at", None, "extraction_time_unknown"),
-    ("transformed_at", "2026-10-31T09:00:00+00:00", "transformation_stale"),
-])
+@pytest.mark.parametrize(
+    "field,value,reason",
+    [
+        ("source_completed", False, "event_not_completed"),
+        ("source_completed", None, "event_not_completed"),
+        ("latest_extraction_status", "failed", "extraction_not_successful"),
+        ("latest_load_status", "failed", "load_not_successful"),
+        ("expected_participant_count", None, "participant_count_unknown"),
+        ("observed_participant_count", 1, "participant_count_mismatch"),
+        ("latest_participant_count", 1, "participant_count_mismatch"),
+        ("decklist_coverage_pct", 0, "decklist_coverage_below_threshold"),
+        ("history_coverage_pct", None, "history_coverage_unknown"),
+        ("classification_coverage_pct", 50, "classification_coverage_below_threshold"),
+        ("extracted_at", "2026-10-20T10:00:00+00:00", "extraction_stale"),
+        ("extracted_at", None, "extraction_time_unknown"),
+        ("transformed_at", "2026-10-31T09:00:00+00:00", "transformation_stale"),
+    ],
+)
 def test_incomplete_or_failed_events_explain_why(complete_event, field, value, reason):
     complete_event[field] = value
     result = check_readiness(complete_event, now=NOW)
@@ -63,7 +66,9 @@ def test_standings_report_can_explicitly_relax_deck_requirements(complete_event)
     assert check_readiness(complete_event, policy, now=NOW)["ready"] is True
 
 
-@pytest.mark.parametrize("kwargs", [{"min_decklist_pct": -1}, {"min_history_pct": 101}, {"max_age_hours": 0}])
+@pytest.mark.parametrize(
+    "kwargs", [{"min_decklist_pct": -1}, {"min_history_pct": 101}, {"max_age_hours": 0}]
+)
 def test_invalid_policy_is_rejected(kwargs):
     with pytest.raises(ValueError):
         ReadinessPolicy(**kwargs)

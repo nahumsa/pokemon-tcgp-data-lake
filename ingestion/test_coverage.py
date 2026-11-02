@@ -15,7 +15,9 @@ def test_missing_inputs_are_unknown_instead_of_zero():
 
 
 def test_successful_extraction_can_have_no_published_decks():
-    audit = build_audit(EVENT, participants=[{"name": "A"}, {"name": "B"}], decks=[], matches=[])
+    audit = build_audit(
+        EVENT, participants=[{"name": "A"}, {"name": "B"}], decks=[], matches=[]
+    )
     assert audit["expected_participant_count"] == 2
     assert audit["participant_count"] == 2
     assert audit["decklist_count"] == audit["history_participant_count"] == 0
@@ -27,14 +29,23 @@ def test_history_counts_players_once_and_empty_decks_do_not_count():
     audit = build_audit(
         EVENT,
         participants=[{"name": "A"}, {"name": "B"}],
-        decks=[{"player": "A", "decklist": [{"name": "Card"}]} , {"player": "B", "decklist": []}],
+        decks=[
+            {"player": "A", "decklist": [{"name": "Card"}]},
+            {"player": "B", "decklist": []},
+        ],
         matches=[{"P1": "A", "Round": "1"}, {"P1": "A", "Round": "2"}],
     )
     assert audit["decklist_count"] == audit["history_participant_count"] == 1
 
 
 def test_failed_attempt_does_not_claim_success_and_rerun_clears_errors():
-    failed = build_audit(EVENT, participants=[], decks=[], matches=[], errors=["participants", "decks", "decks"])
+    failed = build_audit(
+        EVENT,
+        participants=[],
+        decks=[],
+        matches=[],
+        errors=["participants", "decks", "decks"],
+    )
     assert failed["extraction_status"] == "failed"
     assert failed["participant_error_count"] == 1
     assert failed["decklist_error_count"] == 2
