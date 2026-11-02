@@ -169,6 +169,9 @@ normalization, coverage, compatibility aliases, and rebuild instructions.
 
 ### Semantic query migration
 
+For matchup sample filters, nominal Wilson intervals and event/result drilldowns,
+see the [matchup evidence contract](semantic_layer/docs/matchup_evidence.md).
+
 See the [metric contract](semantic_layer/docs/metrics.md) for formulas, aggregation
 grains, denominator populations, draw treatment, and regression checks. All exposed
 rates now use percentages (0–100), including `deck_analysis.avg_win_rate` (previously
