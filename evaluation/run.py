@@ -67,6 +67,10 @@ def prompt(question, tools):
     }
 
 
+def reject_constant(name):
+    raise ValueError(f"Non-finite JSON constant: {name}")
+
+
 async def drive(session, question, tools, read, send, max_calls=20):
     start = time.monotonic()
     transcript = {
@@ -87,7 +91,7 @@ async def drive(session, question, tools, read, send, max_calls=20):
             transcript["error"] = "Candidate ended without an answer"
             break
         try:
-            action = json.loads(line)
+            action = json.loads(line, parse_constant=reject_constant)
         except (ValueError, TypeError):
             await send(
                 {"event": "error", "message": "Expected one JSON action per line"}

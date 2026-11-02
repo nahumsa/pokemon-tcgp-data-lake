@@ -108,6 +108,13 @@ def make_reference(work):
                         }
                     )
     con = duckdb.connect()
+    schemas = {
+        "events": "(event VARCHAR, source VARCHAR, event_type VARCHAR)",
+        "entries": "(event VARCHAR, player_id BIGINT, name VARCHAR, archetype VARCHAR, published BOOLEAN, placement BIGINT)",
+        "cards": "(event VARCHAR, player_id BIGINT, name VARCHAR, quantity BIGINT, kind VARCHAR)",
+        "results": "(event VARCHAR, round BIGINT, player_id BIGINT, opponent_id BIGINT, outcome VARCHAR, bye BOOLEAN)",
+        "pairings": "(event VARCHAR, round BIGINT, low BIGINT, high BIGINT, played BOOLEAN, bye BOOLEAN)",
+    }
     for name, rows in [
         ("events", events),
         ("entries", entries),
@@ -115,6 +122,9 @@ def make_reference(work):
         ("results", results),
         ("pairings", pairings),
     ]:
+        if not rows:
+            con.execute(f"create table {name} {schemas[name]}")
+            continue
         con.register(name + "_input", pd.DataFrame(rows))
         con.execute(f"create table {name} as select * from {name}_input")
     duplicate_count = con.execute(

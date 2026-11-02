@@ -119,6 +119,8 @@ def prepare(output, latest=2):
         with gzip.open(snapshot, "rt", encoding="utf-8") as handle:
             rows = json.load(handle)
     database = output / "benchmark.duckdb"
+    # Rebuilding invalidates any earlier success, including when a dbt step fails.
+    (output / "manifest.json").unlink(missing_ok=True)
     stage_snapshot(rows, database)
     project = output / "transformations"
     if not project.exists():
@@ -164,7 +166,7 @@ def prepare(output, latest=2):
         )
         (output / f"dbt-{action}.log").write_text(result.stdout)
         print(f"dbt {action}: exit {result.returncode}", flush=True)
-        if result.returncode and action != "test":
+        if result.returncode:
             raise RuntimeError(f"dbt {action} failed; see logs")
     manifest = {
         "synthetic": False,

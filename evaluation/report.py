@@ -28,6 +28,12 @@ def report(run, questions_path=None, expected_path=None):
             continue
         record = json.loads(path.read_text())
         result = grade(question, record, expected)
+        answer = record.get("answer")
+        answer = answer if isinstance(answer, dict) else {}
+        facts = answer.get("facts")
+        facts = facts if isinstance(facts, dict) else {}
+        explanation = answer.get("explanation")
+        explanation = explanation if isinstance(explanation, str) else "No final answer"
         verdict = "PASS" if result["passed"] else "FAIL"
         lines.append(f"| {question['id']} | {verdict} | {result['tool_calls']} |")
         details += [
@@ -38,7 +44,7 @@ def report(run, questions_path=None, expected_path=None):
             "",
             "Expected: `" + json.dumps(expected[question["id"]]) + "`",
             "",
-            "Answer: " + record.get("answer", {}).get("explanation", "No final answer"),
+            "Answer: " + explanation,
             "",
             "Trace: [" + path.name + "](" + path.name + ")",
         ]
@@ -48,7 +54,7 @@ def report(run, questions_path=None, expected_path=None):
             "|---|---|---|---|",
         ]
         for key, reference in expected[question["id"]].items():
-            actual = record.get("answer", {}).get("facts", {}).get(key)
+            actual = facts.get(key)
 
             def display(value):
                 return json.dumps(value, ensure_ascii=False)

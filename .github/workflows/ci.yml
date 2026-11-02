@@ -43,9 +43,10 @@ jobs:
         run: uv run ruff check .
 
       - name: Test ingestion, metrics, and MCP evaluation harness
-        run: uv run pytest ingestion/test_labs.py semantic_layer/tests tests/test_mcp_evaluation.py tests/test_real_data_evaluation.py -q
+        run: uv run pytest ingestion/test_labs.py semantic_layer/tests tests -q
 
       - name: Unit test tournament match logic
         run: |
           cd transformations
           uv run --package pokemon-tcg-transformations dbt test --profiles-dir . --target unit --select test_type:unit
+
