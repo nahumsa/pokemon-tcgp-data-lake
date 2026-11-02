@@ -1,5 +1,6 @@
 """Regression checks for matchup evidence, provenance and pooled uncertainty."""
 
+import asyncio
 from pathlib import Path
 
 import duckdb
@@ -7,7 +8,7 @@ import ibis
 import pandas as pd
 import pytest
 import yaml
-from boring_semantic_layer import from_config
+from boring_semantic_layer import MCPSemanticModel, from_config
 from jinja2 import Environment, StrictUndefined
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -178,3 +179,23 @@ def test_sample_filter_does_not_mix_formats_or_apply_limit_before_threshold(sema
         filters=[{"field": "format", "operator": "=", "value": "STANDARD"}],
     )
     assert output["rows"] == []
+
+
+def test_mcp_tool_exposes_post_pool_sample_filter(semantic):
+    from semantic_layer.semantic_layer.matchups import register_matchup_tools
+
+    server = MCPSemanticModel(models={"matchup_evidence": semantic})
+    register_matchup_tools(server, {"matchup_evidence": semantic})
+    result = asyncio.run(server.call_tool(
+        "query_matchup_evidence_with_minimum_sample", {"min_sample_size": 10}
+    ))
+    assert result[1]["qualifying_groups"] == 2
+
+
+def test_sample_measure_cannot_be_misused_as_a_pre_pool_filter(semantic):
+    from semantic_layer.semantic_layer.matchups import query_matchup_evidence
+
+    with pytest.raises(ValueError, match="dimension"):
+        query_matchup_evidence(
+            semantic, filters=[{"field": "sample_size", "operator": ">=", "value": 10}]
+        )
