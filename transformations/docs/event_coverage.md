@@ -5,6 +5,33 @@ stored or audited event, including an event whose first extraction failed.
 `tournament_url` links every row to its source. Both ingestion commands retain
 extraction summaries in `pokemon_tcg_data.ingestion_event_runs`.
 
+## Query current completion statistics
+
+Use the coverage table for current statistics across events. Generated Markdown
+is an optional report snapshot and is not maintained as a dataset in the repository.
+
+```sql
+select
+    tournament_name,
+    tournament_url,
+    source_completed,
+    participant_coverage_pct,
+    decklist_coverage_pct,
+    history_coverage_pct,
+    classification_coverage_pct,
+    latest_extraction_status,
+    latest_load_status,
+    extraction_error_count,
+    extracted_at,
+    transformed_at
+from main_consumption.mart_event_coverage
+order by tournament_date desc, tournament_url;
+```
+
+Coverage is measured separately for each resource; source completion alone does
+not establish report readiness. Use the readiness CLI below to evaluate freshness
+and the selected coverage thresholds.
+
 ## Denominators
 
 All rates are percentages at the **single-event grain**. Do not average them
@@ -92,6 +119,3 @@ the report component from #3. The Markdown section includes source provenance,
 counts, coverage, timestamps, policy, and reasons. Integration into a full event
 recap remains part of #3, whose report generator does not exist yet. This change
 does not publish reports or add delivery credentials.
-
-See [the real-data validation record](event_coverage_validation.md) for commands
-and observed outcomes.
