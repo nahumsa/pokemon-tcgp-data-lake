@@ -93,6 +93,10 @@ DBT_SEND_ANONYMOUS_USAGE_STATS=false uv run dbt test \
   --profiles-dir . --target unit --select test_type:unit
 ```
 
+Validation passed 84 Python tests, 129 dbt checks on real ingested data
+(including 17 native unit tests), Ruff, and SQLFluff on both new SQL models.
+The 17 native unit tests also passed against an in-memory database.
+
 Tests exercise unknown versus zero inputs, failed extraction/load attempts,
 successful reruns, first-failure initialization in a fresh DuckDB database,
 snapshot timestamps, ambiguous classifications, zero denominators, latest-failure
