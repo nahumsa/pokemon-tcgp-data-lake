@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -1919,7 +1919,7 @@ dev = [
 [[package]]
 name = "pokemon-tcg-ingestion"
 version = "0.1.0"
-source = { virtual = "ingestion" }
+source = { editable = "ingestion" }
 dependencies = [
     { name = "dlt", extra = ["duckdb"] },
     { name = "pydantic" },
@@ -1942,16 +1942,18 @@ requires-dist = [
 [[package]]
 name = "pokemon-tcg-semantic-layer"
 version = "0.1.0"
-source = { virtual = "semantic_layer" }
+source = { editable = "semantic_layer" }
 dependencies = [
     { name = "boring-semantic-layer", extra = ["mcp"] },
     { name = "mcp" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "boring-semantic-layer", extras = ["mcp"], specifier = ">=0.3.7" },
     { name = "mcp", specifier = ">=1.26.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
 ]
 
 [[package]]

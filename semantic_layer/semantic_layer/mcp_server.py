@@ -1,69 +1,42 @@
-#!/usr/bin/env python3
-"""
-MCP Server for the Pokemon TCG Data Lake Semantic Layer.
-Exposes semantic models for archetypes, cards, and matches via Model Context Protocol.
-"""
+"""Serve semantic models, or check readiness without starting MCP."""
 
-import ibis
-from pathlib import Path
-from typing import Dict, Any
-from boring_semantic_layer import MCPSemanticModel, from_yaml
+import argparse
+import json
+import sys
 
-# Define paths
-base_dir: Path = Path(__file__).parent
-yaml_path: Path = base_dir / "boring.yml"
+from boring_semantic_layer import MCPSemanticModel
 
-# Pre-load tables from specific DuckDB schemas
-# Boring Semantic Layer uses Ibis under the hood
-con: Any = ibis.duckdb.connect(
-    str(base_dir.parent.parent / "pokemon_tcg_pipeline.duckdb")
-)
-tables: Dict[str, Any] = {
-    "mart_archetype_stats": con.table(
-        "mart_archetype_stats", database="main_consumption"
-    ),
-    "mart_monthly_meta_shifts": con.table(
-        "mart_monthly_meta_shifts", database="main_consumption"
-    ),
-    "mart_archetype_matchups": con.table(
-        "mart_archetype_matchups", database="main_consumption"
-    ),
-    "int_classified_deck_cards": con.table(
-        "int_classified_deck_cards", database="main_semantic"
-    ),
-    "mart_monthly_populations": con.table(
-        "mart_monthly_populations", database="main_consumption"
-    ),
-    "mart_archetype_deck_populations": con.table(
-        "mart_archetype_deck_populations", database="main_consumption"
-    ),
-    "mart_archetype_card_staples": con.table(
-        "mart_archetype_card_staples", database="main_consumption"
-    ),
-    "mart_archetype_matchup_suggestions": con.table(
-        "mart_archetype_matchup_suggestions", database="main_consumption"
-    ),
-    "mart_tournament_analysis": con.table(
-        "mart_tournament_analysis", database="main_consumption"
-    ),
-    "mart_deck_analysis": con.table("mart_deck_analysis", database="main_consumption"),
-    "dim_deck_classification": con.table(
-        "dim_deck_classification", database="main_semantic"
-    ),
-    "dim_cards": con.table("dim_cards", database="main_semantic"),
-    "fct_matches": con.table("fct_matches", database="main_semantic"),
-    "fct_tournament_matches": con.table("fct_tournament_matches", database="main_semantic"),
-}
+from semantic_layer.runtime import ReadinessError, open_models
 
-# Load semantic models from boring.yml
-models: Dict[str, Any] = from_yaml(str(yaml_path), tables=tables)
 
-# Create and configure MCP server
-server: MCPSemanticModel = MCPSemanticModel(
-    models=models,
-    name="Pokemon TCG Data Lake Semantic Layer Server",
-)
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--check", action="store_true", help="Check database/model readiness and exit."
+    )
+    args = parser.parse_args(argv)
+    try:
+        with open_models() as (path, models):
+            if args.check:
+                print(
+                    json.dumps(
+                        {
+                            "database": str(path),
+                            "read_only": True,
+                            "models": sorted(models),
+                        }
+                    )
+                )
+            else:
+                server = MCPSemanticModel(
+                    models=models, name="Pokemon TCG Data Lake Semantic Layer Server"
+                )
+                server.run()
+    except ReadinessError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    return 0
+
 
 if __name__ == "__main__":
-    # Start the MCP server using stdio transport
-    server.run()
+    raise SystemExit(main())
