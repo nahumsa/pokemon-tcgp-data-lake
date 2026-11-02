@@ -1,3 +1,0 @@
-pokemon_tcg:
-  type: duckdb
-  database: ../pokemon_tcg_pipeline.duckdb
