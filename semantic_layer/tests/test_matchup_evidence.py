@@ -30,6 +30,7 @@ def observations():
                 ('p3', 'e1', 'No history'), ('p4', 'e1', 'Unclassified'),
                 ('p5', 'e2', 'Elsewhere')
             ) t(participant_id, tournament_id, player_name);
+            alter table dim_participants add column decklist_link varchar;
             create table dim_deck_archetypes as select * from (values
                 ('p1', 'A', 'A1'), ('p2', 'B', 'B1'),
                 ('p3', 'A', 'A1'), ('p5', 'A', 'A1')
@@ -106,7 +107,9 @@ def semantic():
     con = ibis.duckdb.connect()
     con.raw_sql("create schema main_consumption; set schema=main_consumption")
     con.raw_sql("""
-        create table mart_matchup_evidence as select * from (values
+        create table mart_matchup_evidence as select *, 'Set' as set_name,
+            'labs' as source, 'in_person' as event_type,
+            'A' as p1_archetype, 'B' as p2_archetype from (values
             ('e1', 'PTCG', 'STANDARD', date '2026-10-01', 'played', 1, 1, 0, 0),
             ('e2', 'PTCG', 'STANDARD', date '2026-10-02', 'played', 9, 0, 5, 4),
             ('e3', 'PTCG', 'EXPANDED', date '2026-10-03', 'played', 90, 90, 0, 0),
@@ -148,8 +151,30 @@ def test_zero_samples_return_null_rates_and_intervals(semantic):
 
 
 def test_minimum_sample_filter_applies_to_pooled_groups(semantic):
-    rows = semantic.query(
-        dimensions=["game", "format"], measures=["sample_size", "win_rate"],
-        filters=[lambda t: t.sample_size >= 10],
-    ).execute()
-    assert sorted(rows.sample_size.tolist()) == [10, 90]
+    from semantic_layer.semantic_layer.matchups import query_matchup_evidence
+
+    output = query_matchup_evidence(semantic, min_sample_size=10)
+    assert sorted(row["sample_size"] for row in output["rows"]) == [10, 90]
+    assert output["qualifying_groups"] == 2
+
+
+@pytest.mark.parametrize("minimum", [0, -1, 1.5, True])
+def test_sample_filter_rejects_invalid_thresholds(semantic, minimum):
+    from semantic_layer.semantic_layer.matchups import query_matchup_evidence
+
+    with pytest.raises(ValueError, match="positive integer"):
+        query_matchup_evidence(semantic, min_sample_size=minimum)
+
+
+def test_sample_filter_does_not_mix_formats_or_apply_limit_before_threshold(semantic):
+    from semantic_layer.semantic_layer.matchups import query_matchup_evidence
+
+    output = query_matchup_evidence(semantic, min_sample_size=10, limit=1)
+    assert output["qualifying_groups"] == 2
+    assert output["rows"][0]["format"] == "EXPANDED"
+    assert output["rows"][0]["sample_size"] == 90
+    output = query_matchup_evidence(
+        semantic, min_sample_size=11,
+        filters=[{"field": "format", "operator": "=", "value": "STANDARD"}],
+    )
+    assert output["rows"] == []
