@@ -10,6 +10,7 @@ from jinja2 import Environment, StrictUndefined
 @pytest.fixture
 def coverage_db():
     with duckdb.connect() as con:
+        con.execute("set timezone = 'UTC'")
         con.execute("""
             create table dim_tournaments as select 'e1' tournament_id, 'labs/event' tournament_url,
                 'Event' tournament_name, date '2026-10-31' tournament_date,
