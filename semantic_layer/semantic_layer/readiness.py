@@ -113,6 +113,45 @@ def read_event_coverage(con, tournament_url):
     return event
 
 
+def coverage_section(event, policy=None, *, now=None):
+    """Reusable Markdown disclosure for the event report component (#3)."""
+    policy = policy or ReadinessPolicy()
+    result = check_readiness(event, policy, now=now)
+    lines = ["### Data coverage", "", f"Source: {event['tournament_url']}"]
+    observed = event.get("observed_participant_count")
+    expected = event.get("expected_participant_count")
+    lines.append(
+        f"Stored entrants: {observed if observed is not None else 'unavailable'}; "
+        f"source expected: {expected if expected is not None else 'unavailable'}."
+    )
+    for label, field in (
+        ("Participants", "participant_coverage_pct"),
+        ("Decklists", "decklist_coverage_pct"),
+        ("History", "history_coverage_pct"),
+        ("Classification", "classification_coverage_pct"),
+    ):
+        value = event.get(field)
+        display = "unavailable" if value is None else f"{value:.1f}%"
+        lines.append(f"- {label}: {display}")
+    lines.extend(
+        [
+            "",
+            f"Extracted: {event.get('extracted_at') or 'unavailable'}",
+            f"Last successful ingestion: {event.get('last_successful_ingestion_at') or 'unavailable'}",
+            f"Coverage model built: {event.get('transformed_at') or 'unavailable'}",
+            "History coverage counts entrants with at least one result, not complete rounds.",
+            f"Latest extraction errors: {event.get('extraction_error_count', 'unavailable')}.",
+            f"Policy: decklists ≥ {policy.min_decklist_pct}%, history ≥ {policy.min_history_pct}%, "
+            f"classification ≥ {policy.min_classification_pct}%; maximum extraction age {policy.max_age_hours} hours.",
+            "",
+            "Report readiness: " + ("ready" if result["ready"] else "not ready"),
+        ]
+    )
+    if result["reasons"]:
+        lines.append("Reasons: " + ", ".join(result["reasons"]))
+    return "\n".join(lines) + "\n"
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("tournament_url")
@@ -125,6 +164,7 @@ def main():
     parser.add_argument("--min-history-pct", type=float, default=100)
     parser.add_argument("--min-classification-pct", type=float, default=100)
     parser.add_argument("--max-age-hours", type=float, default=24)
+    parser.add_argument("--output", choices=["json", "markdown"], default="json")
     args = parser.parse_args()
     try:
         policy = ReadinessPolicy(
@@ -146,17 +186,19 @@ def main():
             parser.error(
                 "Event has no coverage model row; ingest and transform it first"
             )
-    print(
-        json.dumps(
-            {
-                "coverage": event,
-                "policy": vars(policy),
-                **check_readiness(event, policy),
-            },
-            default=str,
-            indent=2,
+    result = check_readiness(event, policy)
+    if args.output == "markdown":
+        print(coverage_section(event, policy), end="")
+    else:
+        print(
+            json.dumps(
+                {"coverage": event, "policy": vars(policy), **result},
+                default=str,
+                indent=2,
+            )
         )
-    )
+    if not result["ready"]:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

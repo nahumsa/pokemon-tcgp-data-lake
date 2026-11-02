@@ -1,15 +1,19 @@
 {% set audit_source = source('pokemon_tcg', 'ingestion_event_runs') %}
 {% set audit_relation = none %}
 {% if execute %}
-    {% set audit_relation = adapter.get_relation(database=audit_source.database, schema=audit_source.schema, identifier=audit_source.identifier) %}
+    {% set audit_relation = adapter.get_relation(
+        database=audit_source.database,
+        schema=audit_source.schema,
+        identifier=audit_source.identifier
+    ) %}
 {% endif %}
 
 {% if audit_relation %}
-select * exclude (_dlt_id, _dlt_load_id)
-from {{ audit_source }}
-qualify row_number() over (
-    partition by tournament_url, attempt_id order by _dlt_load_id desc
-) = 1
+    select * exclude (_dlt_id, _dlt_load_id)
+    from {{ audit_source }}
+    qualify row_number() over (
+        partition by tournament_url, attempt_id order by _dlt_load_id desc
+    ) = 1
 {% else %}
 -- Older databases/snapshots remain queryable but cannot claim observed freshness.
 select

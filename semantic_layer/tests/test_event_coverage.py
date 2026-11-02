@@ -1,6 +1,7 @@
 """Execute the production coverage model against small independent inputs."""
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import duckdb
 import pytest
@@ -43,7 +44,13 @@ def coverage(con):
     sql = (
         Environment(undefined=StrictUndefined)
         .from_string(query)
-        .render(ref=lambda name: name, run_started_at="2026-10-31T11:00:00+00:00")
+        .render(
+            ref=lambda name: name,
+            run_started_at="2026-10-31T11:00:00+00:00",
+            dbt_utils=SimpleNamespace(
+                generate_surrogate_key=lambda columns: f"md5({columns[0]})"
+            ),
+        )
     )
     result = con.execute(sql)
     return dict(zip([col[0] for col in result.description], result.fetchone()))

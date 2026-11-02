@@ -35,22 +35,42 @@ participants as (
 
 events as (
     select
-        tournament_id, tournament_url, tournament_name, tournament_date,
-        source, event_type, format, player_count
+        tournament_id,
+        tournament_url,
+        tournament_name,
+        tournament_date,
+        source,
+        event_type,
+        format,
+        player_count
     from {{ ref('dim_tournaments') }}
     union all
     -- Even a first failed attempt has provenance and an explicit unready row.
     select
-        md5(a.tournament_url), a.tournament_url, null, null, 'unknown', 'unknown', null, null
+        {{ dbt_utils.generate_surrogate_key(['a.tournament_url']) }} as tournament_id,
+        a.tournament_url,
+        null as tournament_name,
+        null as tournament_date,
+        'unknown' as source,
+        'unknown' as event_type,
+        null as format,
+        null as player_count
     from latest as a
     where not exists (
-        select 1 from {{ ref('dim_tournaments') }} as t where t.tournament_url = a.tournament_url
+        select 1 from {{ ref('dim_tournaments') }} as t
+        where t.tournament_url = a.tournament_url
     )
 ),
 
 counts as (
     select
-        t.* exclude (player_count),
+        t.tournament_id,
+        t.tournament_url,
+        t.tournament_name,
+        t.tournament_date,
+        t.source,
+        t.event_type,
+        t.format,
         coalesce(a.expected_participant_count, t.player_count) as expected_participant_count,
         coalesce(p.observed_participant_count, 0) as observed_participant_count,
         coalesce(p.classified_participant_count, 0) as classified_participant_count,
