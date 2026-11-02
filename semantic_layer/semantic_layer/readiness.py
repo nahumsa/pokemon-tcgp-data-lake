@@ -69,15 +69,48 @@ def check_readiness(event, policy=None, *, now=None):
     extracted = timestamp(event.get("extracted_at"))
     loaded = timestamp(event.get("last_successful_ingestion_at"))
     transformed = timestamp(event.get("transformed_at"))
+    latest_load = timestamp(event.get("latest_load_at"))
     if extracted is None:
         reasons.append("extraction_time_unknown")
     elif not 0 <= (now - extracted).total_seconds() <= policy.max_age_hours * 3600:
         reasons.append("extraction_stale")
     if loaded is None:
         reasons.append("ingestion_time_unknown")
-    if transformed is None or loaded is None or transformed < loaded:
+    if (
+        transformed is None
+        or loaded is None
+        or transformed < loaded
+        or (latest_load is not None and transformed < latest_load)
+    ):
         reasons.append("transformation_stale")
     return {"ready": not reasons, "reasons": reasons}
+
+
+def read_event_coverage(con, tournament_url):
+    """Check the live audit head as well as the last successful dbt model build."""
+    result = con.execute(
+        "select * from main_consumption.mart_event_coverage where tournament_url = ?",
+        [tournament_url],
+    )
+    row = result.fetchone()
+    if row is None:
+        return None
+    event = dict(zip([column[0] for column in result.description], row))
+    has_audits = con.execute("""
+        select count(*) from information_schema.tables
+        where table_schema = 'pokemon_tcg_data' and table_name = 'ingestion_event_runs'
+    """).fetchone()[0]
+    if has_audits:
+        latest = con.execute(
+            """
+            select loaded_at::timestamptz from pokemon_tcg_data.ingestion_event_runs
+            where tournament_url = ? order by loaded_at desc, attempt_id desc limit 1
+        """,
+            [tournament_url],
+        ).fetchone()
+        if latest:
+            event["latest_load_at"] = latest[0]
+    return event
 
 
 def main():
@@ -105,16 +138,14 @@ def main():
     import duckdb
 
     with duckdb.connect(str(args.database), read_only=True) as con:
-        result = con.execute(
-            "select * from main_consumption.mart_event_coverage where tournament_url = ?",
-            [args.tournament_url],
-        )
-        rows = result.fetchall()
-        if not rows:
+        con.execute("set timezone = 'UTC'")
+        con.begin()
+        event = read_event_coverage(con, args.tournament_url)
+        con.commit()
+        if event is None:
             parser.error(
                 "Event has no coverage model row; ingest and transform it first"
             )
-        event = dict(zip([column[0] for column in result.description], rows[0]))
     print(
         json.dumps(
             {

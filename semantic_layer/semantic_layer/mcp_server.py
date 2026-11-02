@@ -19,6 +19,7 @@ con: Any = ibis.duckdb.connect(
     str(base_dir.parent.parent / "pokemon_tcg_pipeline.duckdb")
 )
 tables: Dict[str, Any] = {
+    "mart_event_coverage": con.table("mart_event_coverage", database="main_consumption"),
     "mart_archetype_stats": con.table(
         "mart_archetype_stats", database="main_consumption"
     ),
