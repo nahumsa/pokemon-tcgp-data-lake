@@ -9,7 +9,10 @@ from pathlib import Path
 from typing import Dict, Any
 from boring_semantic_layer import MCPSemanticModel, from_yaml
 
-from .matchups import register_matchup_tools
+if __package__:
+    from .matchups import register_matchup_tools
+else:  # Preserve the documented direct-script and Docker entry points.
+    from matchups import register_matchup_tools
 
 # Define paths
 base_dir: Path = Path(__file__).parent
