@@ -35,6 +35,11 @@ def test_complete_fresh_event_is_ready(complete_event):
     assert check_readiness(complete_event, now=NOW) == {"ready": True, "reasons": []}
 
 
+def test_ingestion_after_the_coverage_build_requires_a_rebuild(complete_event):
+    complete_event["latest_load_at"] = "2026-10-31T11:00:00Z"
+    assert "transformation_stale" in check_readiness(complete_event, now=NOW)["reasons"]
+
+
 @pytest.mark.parametrize(
     "field,value,reason",
     [

@@ -136,3 +136,43 @@ def test_play_captures_detail_failures_without_losing_standings(monkeypatch):
     assert len(rows[main.TOURNAMENT_PARTICIPANTS_TABLE]) == 1
     assert audit["decklist_error_count"] == 1
     assert audit["extraction_status"] == "failed"
+
+
+def test_snapshot_reloads_preserve_extraction_time_and_get_distinct_load_attempts():
+    from unittest.mock import Mock
+
+    from ingestion.coverage import load_audits
+
+    pipeline = Mock()
+    audit = build_audit(EVENT, participants=[], decks=[], matches=[])
+    load_audits(pipeline, [audit], load_status="success")
+    first = pipeline.run.call_args.args[0][0]
+    load_audits(pipeline, [audit], load_status="success")
+    second = pipeline.run.call_args.args[0][0]
+    assert first["extracted_at"] == second["extracted_at"] == audit["extracted_at"]
+    assert first["attempt_id"] != second["attempt_id"]
+    assert "loaded_at" not in audit
+
+
+def test_failed_raw_load_is_recorded_and_raised(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    import pytest
+
+    from ingestion import labs
+    from ingestion.coverage import AUDIT_TABLE
+
+    pipeline = Mock()
+    monkeypatch.setattr(
+        labs, "dlt", SimpleNamespace(pipeline=lambda **kwargs: pipeline)
+    )
+    monkeypatch.setattr(
+        labs, "load_data_rows", Mock(side_effect=RuntimeError("Load failed"))
+    )
+    record = Mock()
+    monkeypatch.setattr(labs, "load_audits", record)
+    audits = [build_audit(EVENT, participants=[], decks=[], matches=[])]
+    with pytest.raises(RuntimeError, match="Load failed"):
+        labs.load_rows({AUDIT_TABLE: audits})
+    record.assert_called_once_with(pipeline, audits, load_status="failed")
