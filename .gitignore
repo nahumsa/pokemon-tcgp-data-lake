@@ -174,7 +174,6 @@ cython_debug/
 # Locally generated Limitless Labs snapshots
 /data/limitless_labs/
 
-
-# Disposable validation logs and reports
-/validation-results/
+# Local MCP evaluation warehouses and runtime logs
+/evaluation-results/
 /pytest-of-root/

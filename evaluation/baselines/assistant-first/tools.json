@@ -1,0 +1,285 @@
+[
+  {
+    "name": "list_models",
+    "title": null,
+    "description": "List all available semantic model names. Call this first to understand what's queryable.",
+    "inputSchema": {
+      "properties": {},
+      "type": "object"
+    },
+    "outputSchema": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": null,
+    "meta": {
+      "_fastmcp": {
+        "tags": []
+      }
+    },
+    "execution": null
+  },
+  {
+    "name": "get_model",
+    "title": null,
+    "description": "Fetch dimensions and measures for a semantic model before querying it.",
+    "inputSchema": {
+      "properties": {
+        "model_name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "model_name"
+      ],
+      "type": "object"
+    },
+    "outputSchema": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": null,
+    "meta": {
+      "_fastmcp": {
+        "tags": []
+      }
+    },
+    "execution": null
+  },
+  {
+    "name": "get_time_range",
+    "title": null,
+    "description": "Return the earliest and latest timestamps available for a model's time dimension.",
+    "inputSchema": {
+      "properties": {
+        "model_name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "model_name"
+      ],
+      "type": "object"
+    },
+    "outputSchema": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "icons": null,
+    "annotations": null,
+    "meta": {
+      "_fastmcp": {
+        "tags": []
+      }
+    },
+    "execution": null
+  },
+  {
+    "name": "query_model",
+    "title": null,
+    "description": "Execute semantic model queries with dimensions, measures, filters, ordering, time grain, and chart spec options.",
+    "inputSchema": {
+      "properties": {
+        "model_name": {
+          "type": "string"
+        },
+        "dimensions": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "List of dimension names to group by (e.g., ['flights.origin', 'flights.destination'])"
+        },
+        "measures": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "List of measure names to aggregate (e.g., ['flights.flight_count', 'flights.avg_distance'])"
+        },
+        "filters": {
+          "anyOf": [
+            {
+              "items": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "List of JSON filter objects with the following structure:\n\nSimple Filter:\n```json\n{\n    \"field\": \"dimension_name\",\n    \"operator\": \"=\",\n    \"value\": \"single_value\"\n}\n```\n\nFor 'in'/'not in' operators:\n```json\n{\n    \"field\": \"dimension_name\",\n    \"operator\": \"in\",\n    \"values\": [\"val1\", \"val2\"]\n}\n```\n\nIMPORTANT OPERATOR GUIDELINES:\n- Equality: Use \"=\" (preferred), \"eq\", or \"equals\" - all work identically\n- Text matching: Use \"ilike\" (case-insensitive) instead of \"like\" for better results\n- List membership: \"in\" requires \"values\" field (array), NOT \"value\"\n- Negated list: \"not in\" requires \"values\" field (array), NOT \"value\"\n- Pattern matching: \"ilike\" and \"not ilike\" support wildcards (%, _)\n- Null checks: \"is null\" and \"is not null\" need no value/values field\n\nAvailable operators:\n- \"=\" / \"eq\" / \"equals\": exact match (use \"value\")\n- \"!=\": not equal (use \"value\")\n- \">\", \">=\", \"<\", \"<=\": comparisons (use \"value\")\n- \"in\": value is in list (use \"values\" array)\n- \"not in\": value not in list (use \"values\" array)\n- \"ilike\": case-insensitive pattern match (use \"value\" with % wildcards)\n- \"not ilike\": negated case-insensitive pattern (use \"value\" with % wildcards)\n- \"like\": case-sensitive pattern match (use \"value\" with % wildcards)\n- \"not like\": negated case-sensitive pattern (use \"value\" with % wildcards)\n- \"is null\": field is null (no value/values needed)\n- \"is not null\": field is not null (no value/values needed)\n\nCOMMON MISTAKES TO AVOID:\n1. Don't use \"value\" with \"in\"/\"not in\" - use \"values\" array instead\n2. Don't filter on measures - only filter on dimensions\n3. Don't use .month(), .year() etc. - use time_grain parameter instead\n4. For case-insensitive text search, prefer \"ilike\" over \"like\"\n\nCompound Filter (AND/OR):\n```json\n{\n    \"operator\": \"AND\",\n    \"conditions\": [\n        {\n            \"field\": \"country\",\n            \"operator\": \"equals\",\n            \"value\": \"US\"\n        },\n        {\n            \"field\": \"tier\",\n            \"operator\": \"in\",\n            \"values\": [\"gold\", \"platinum\"]\n        },\n        {\n            \"field\": \"name\",\n            \"operator\": \"ilike\",\n            \"value\": \"%john%\"\n        }\n    ]\n}\n```\n\nExample filters:\n```json\n[\n    {\"field\": \"status\", \"operator\": \"in\", \"values\": [\"active\", \"pending\"]},\n    {\"field\": \"name\", \"operator\": \"ilike\", \"value\": \"%smith%\"},\n    {\"field\": \"created_date\", \"operator\": \">=\", \"value\": \"2024-01-01\"},\n    {\"field\": \"email\", \"operator\": \"not ilike\", \"value\": \"%spam%\"}\n]\n```\n\nExample of a complex nested filter with time ranges:\n```json\n[{\n    \"operator\": \"AND\",\n    \"conditions\": [\n        {\n            \"operator\": \"AND\",\n            \"conditions\": [\n                {\"field\": \"flight_date\", \"operator\": \">=\", \"value\": \"2024-01-01\"},\n                {\"field\": \"flight_date\", \"operator\": \"<\", \"value\": \"2024-04-01\"}\n            ]\n        },\n        {\"field\": \"carrier.country\", \"operator\": \"eq\", \"value\": \"US\"}\n    ]\n}]\n```"
+        },
+        "order_by": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "List of [field, direction] pairs for sorting (e.g., [['flights.flight_count', 'desc']])",
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum number of rows to return"
+        },
+        "time_grain": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Time grain for aggregating time-based dimensions (e.g., \"TIME_GRAIN_DAY\", \"TIME_GRAIN_MONTH\").\n\nIMPORTANT: Instead of trying to use .month(), .year(), .quarter() etc. in filters,\nuse this time_grain parameter to aggregate by time periods. The system will\nautomatically handle time dimension transformations.\n\nAvailable time grains:\n- TIME_GRAIN_YEAR\n- TIME_GRAIN_QUARTER\n- TIME_GRAIN_MONTH\n- TIME_GRAIN_WEEK\n- TIME_GRAIN_DAY\n- TIME_GRAIN_HOUR\n- TIME_GRAIN_MINUTE\n- TIME_GRAIN_SECOND\n\nExamples:\n- For monthly data: time_grain=\"TIME_GRAIN_MONTH\"\n- For yearly data: time_grain=\"TIME_GRAIN_YEAR\"\n- For daily data: time_grain=\"TIME_GRAIN_DAY\"\n\nThen filter using the time_range parameter or regular date filters like:\n{\"field\": \"date_column\", \"operator\": \">=\", \"value\": \"2024-01-01\"}"
+        },
+        "time_range": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional time range filter with format:\n```json\n{\n    \"start\": \"2024-01-01T00:00:00Z\",\n    \"end\": \"2024-12-31T23:59:59Z\"\n}\n```\n\nUsing time_range is preferred over using filters for time-based filtering because:\n1. It automatically applies to the model's primary time dimension\n2. It ensures proper time zone handling with ISO 8601 format\n3. It's more concise than creating complex filter conditions\n4. It works seamlessly with time_grain parameter for time-based aggregations"
+        },
+        "get_records": {
+          "default": true,
+          "description": "Return data records to LLM (default: true). Set `false` for final display-only queries where you don't need to process the data further. This saves tokens when the chart/table display is sufficient.",
+          "type": "boolean"
+        },
+        "records_limit": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Max records returned to LLM context (default: None = all). Use to limit token usage for large result sets. For example, set to 50 to cap the data sent to your context window."
+        },
+        "get_chart": {
+          "default": true,
+          "description": "Generate chart visualization (default: true). Set `false` to skip chart generation and return only data records. Charts are automatically hidden for single-row results (e.g., a single aggregate value).",
+          "type": "boolean"
+        },
+        "chart_backend": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Override the default chart backend for this call (`altair`, `plotly`, or `plotext`). Leave `null` to use the server's default backend (altair)."
+        },
+        "chart_format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Override chart output format: `json` (serializable spec), `static` (rendered image), or `string` (ANSI string for terminal). Leave `null` to auto-select based on backend (json for altair/plotly, static for plotext)."
+        },
+        "chart_spec": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Chart specification dictionary for generating visualizations.\n\nFormat: `{\"backend\": \"altair\"|\"plotly\"|\"plotext\", \"spec\": {...}, \"format\": \"json\"|\"static\"|\"interactive\"}`\n\nWhen provided, returns both data and chart: `{\"records\": [...], \"chart\": {...}}`\nWhen None, returns only data: `{\"records\": [...]}`\n\nBackend options:\n- \"altair\": Vega-Lite charts (default, works everywhere)\n- \"plotly\": Plotly charts (interactive, rich features)\n- \"plotext\": Terminal charts (ASCII, for CLI display)\n\nFormat options:\n- \"json\": Returns chart specification as JSON (serializable)\n- \"static\": Returns static image (PNG/SVG)\n- \"interactive\": Returns interactive chart object\n\nSpec examples:\n- `{\"mark\": \"bar\"}` - Bar chart\n- `{\"mark\": \"line\"}` - Line chart\n- `{\"mark\": \"point\"}` - Scatter plot\n- `{\"title\": \"My Chart\"}` - Add title\n- `{\"width\": 600, \"height\": 400}` - Set size\n\nComplete example:\n```json\n{\n    \"backend\": \"altair\",\n    \"spec\": {\"mark\": \"line\", \"title\": \"Monthly Trends\"},\n    \"format\": \"json\"\n}\n```"
+        }
+      },
+      "required": [
+        "model_name"
+      ],
+      "type": "object"
+    },
+    "outputSchema": {
+      "properties": {
+        "result": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "type": "object",
+      "x-fastmcp-wrap-result": true
+    },
+    "icons": null,
+    "annotations": null,
+    "meta": {
+      "_fastmcp": {
+        "tags": []
+      }
+    },
+    "execution": null
+  }
+]

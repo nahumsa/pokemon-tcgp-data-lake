@@ -1,69 +1,56 @@
 #!/usr/bin/env python3
-"""
-MCP Server for the Pokemon TCG Data Lake Semantic Layer.
-Exposes semantic models for archetypes, cards, and matches via Model Context Protocol.
-"""
+"""Serve production semantic models over MCP against an explicit read-only database."""
+
+import argparse
+import os
+from pathlib import Path
 
 import ibis
-from pathlib import Path
-from typing import Dict, Any
+import yaml
 from boring_semantic_layer import MCPSemanticModel, from_yaml
 
-# Define paths
-base_dir: Path = Path(__file__).parent
-yaml_path: Path = base_dir / "boring.yml"
+CONFIG = Path(__file__).with_name("boring.yml")
+DEFAULT_DATABASE = Path(__file__).resolve().parents[2] / "pokemon_tcg_pipeline.duckdb"
 
-# Pre-load tables from specific DuckDB schemas
-# Boring Semantic Layer uses Ibis under the hood
-con: Any = ibis.duckdb.connect(
-    str(base_dir.parent.parent / "pokemon_tcg_pipeline.duckdb")
-)
-tables: Dict[str, Any] = {
-    "mart_archetype_stats": con.table(
-        "mart_archetype_stats", database="main_consumption"
-    ),
-    "mart_monthly_meta_shifts": con.table(
-        "mart_monthly_meta_shifts", database="main_consumption"
-    ),
-    "mart_archetype_matchups": con.table(
-        "mart_archetype_matchups", database="main_consumption"
-    ),
-    "int_classified_deck_cards": con.table(
-        "int_classified_deck_cards", database="main_semantic"
-    ),
-    "mart_monthly_populations": con.table(
-        "mart_monthly_populations", database="main_consumption"
-    ),
-    "mart_archetype_deck_populations": con.table(
-        "mart_archetype_deck_populations", database="main_consumption"
-    ),
-    "mart_archetype_card_staples": con.table(
-        "mart_archetype_card_staples", database="main_consumption"
-    ),
-    "mart_archetype_matchup_suggestions": con.table(
-        "mart_archetype_matchup_suggestions", database="main_consumption"
-    ),
-    "mart_tournament_analysis": con.table(
-        "mart_tournament_analysis", database="main_consumption"
-    ),
-    "mart_deck_analysis": con.table("mart_deck_analysis", database="main_consumption"),
-    "dim_deck_classification": con.table(
-        "dim_deck_classification", database="main_semantic"
-    ),
-    "dim_cards": con.table("dim_cards", database="main_semantic"),
-    "fct_matches": con.table("fct_matches", database="main_semantic"),
-    "fct_tournament_matches": con.table("fct_tournament_matches", database="main_semantic"),
-}
 
-# Load semantic models from boring.yml
-models: Dict[str, Any] = from_yaml(str(yaml_path), tables=tables)
+def create_server(database, config_path=CONFIG):
+    database = Path(database).resolve()
+    if not database.is_file():
+        raise FileNotFoundError(
+            f"Warehouse does not exist: {database}; build dbt models first"
+        )
+    definitions = yaml.safe_load(Path(config_path).read_text())
+    connection = ibis.duckdb.connect(str(database), read_only=True)
+    try:
+        tables = {
+            item["table"]: connection.table(item["table"], database=item["database"])
+            for item in definitions.values()
+        }
+        models = from_yaml(str(config_path), tables=tables)
+        server = MCPSemanticModel(
+            models=models, name="Pokemon TCG Data Lake Semantic Layer"
+        )
+        server.warehouse_connection = connection
+        return server
+    except Exception:
+        connection.disconnect()
+        raise
 
-# Create and configure MCP server
-server: MCPSemanticModel = MCPSemanticModel(
-    models=models,
-    name="Pokemon TCG Data Lake Semantic Layer Server",
-)
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--database",
+        type=Path,
+        default=os.environ.get("PTCG_DATABASE_PATH", DEFAULT_DATABASE),
+    )
+    args = parser.parse_args()
+    server = create_server(args.database)
+    try:
+        server.run(transport="stdio", show_banner=False)
+    finally:
+        server.warehouse_connection.disconnect()
+
 
 if __name__ == "__main__":
-    # Start the MCP server using stdio transport
-    server.run()
+    main()

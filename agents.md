@@ -75,14 +75,12 @@ When working on this codebase, assume one of the following roles based on the ta
 - Fix Models: `cd transformations && uv run sqlfluff fix models`
 - Lint Models: `cd transformations && uv run sqlfluff lint models`
 
+## MCP analytical evaluation
 
-## Analysis validation
-
-Before delivering analytical conclusions, follow `docs/analysis_validation.md`.
-Record the question, cohort, grain, exclusions, tie/bye policy, SQL, dataset
-revision, result rows, and claim-to-evidence links. Check stratified versus pooled
-results and disclose coverage and uncertainty. Run
-`uv run python scripts/validate.py --analysis <evidence-record.json>`.
-A passing evidence record is necessary but does not replace reviewing whether the
-query answers the question and whether the prose is supported. Never describe an
-observational suggestion as a proven improvement.
+Use `evaluation/README.md` to evaluate the complete question-to-answer workflow.
+Run the real MCP server, let the candidate choose tools, retain its actual calls
+and final answer, and compare facts with the independent fixture oracle. Do not
+label archived-answer replay or harness tests as a fresh agent evaluation. Report
+the candidate identity, dataset fingerprint, score, per-question failures, and
+whether the run was guided/blinded. Review the explanation for unsupported
+interpretations even when structured facts pass.

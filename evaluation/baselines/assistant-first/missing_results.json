@@ -1,0 +1,148 @@
+{
+  "id": "missing_results",
+  "question": "What are Missing's recorded-result count and win percentage in February Play? If no results are recorded, explain what can be concluded.",
+  "calls": [
+    {
+      "tool": "get_model",
+      "arguments": {
+        "model_name": "deck_analysis"
+      },
+      "result": {
+        "name": "deck_analysis",
+        "dimensions": {
+          "source": {
+            "description": "Tournament data provider.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "event_type": {
+            "description": "Tournament setting: online, in_person, or unknown.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "set_name": {
+            "description": "The set or meta period.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "player_name": {
+            "description": "Player name.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "tournament_url": {
+            "description": "Link to the tournament standings or decklist context.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          }
+        },
+        "measures": {
+          "total_matches": {
+            "description": "Total matches played by the player in the tournament."
+          },
+          "total_wins": {
+            "description": "Player wins."
+          },
+          "total_losses": {
+            "description": "Player losses."
+          },
+          "total_ties": {
+            "description": "Player ties."
+          },
+          "avg_win_rate": {
+            "description": "Pooled wins / recorded player-results, as a percentage (0-100); ties stay in the denominator. Null with no results."
+          }
+        },
+        "calculated_measures": []
+      },
+      "is_error": false
+    },
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "deck_analysis",
+        "dimensions": [
+          "player_name",
+          "tournament_url"
+        ],
+        "measures": [
+          "total_matches",
+          "avg_win_rate"
+        ],
+        "filters": [
+          {
+            "field": "player_name",
+            "operator": "=",
+            "value": "Missing"
+          }
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 1,
+        "columns": [
+          "player_name",
+          "tournament_url",
+          "total_matches",
+          "avg_win_rate"
+        ],
+        "records": [
+          {
+            "player_name": "Missing",
+            "tournament_url": "https://play.limitlesstcg.com/tournament/feb",
+            "total_matches": null,
+            "avg_win_rate": null
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "answer": {
+    "facts": {
+      "results": 0,
+      "win_rate": null
+    },
+    "explanation": "Missing has an imported February Play entry, but the MCP returns null for its joined result count and win percentage, indicating no recorded match history. I interpret the absent history as 0 recorded observations; the win rate remains undefined, not 0% performance. A null count is an interface ambiguity worth making explicit.",
+    "caveats": [
+      "missing_not_zero_performance"
+    ]
+  },
+  "seconds": 36.707,
+  "candidate": "ChatGPT Work assistant",
+  "fixture_sha256": "ea1b57d2d6496c9dee4de729fd3e817fd5fec5d53b191a42442d0a82d6122ade",
+  "timestamp": "2026-11-02T03:04:24.394869+00:00",
+  "candidate_input": {
+    "event": "question",
+    "id": "missing_results",
+    "question": "What are Missing's recorded-result count and win percentage in February Play? If no results are recorded, explain what can be concluded.",
+    "instructions": "Answer by choosing and calling the available MCP tools. Do not access local files, oracle answers, or external sources. Return a factual explanation grounded in tool results. Percentages use 0-100. Report missing values as null.",
+    "answer_schema": {
+      "action": "answer",
+      "facts": [
+        "results",
+        "win_rate"
+      ],
+      "explanation": "Your reasoning and conclusion",
+      "caveats": [
+        "missing_not_zero_performance"
+      ]
+    },
+    "protocol": {
+      "tool_call": {
+        "action": "call",
+        "tool": "tool_name",
+        "arguments": {}
+      },
+      "final": {
+        "action": "answer",
+        "facts": {},
+        "explanation": "...",
+        "caveats": []
+      }
+    },
+    "tools_reference": "tools.json"
+  },
+  "run_type": "guided_self_evaluation",
+  "blind": false
+}

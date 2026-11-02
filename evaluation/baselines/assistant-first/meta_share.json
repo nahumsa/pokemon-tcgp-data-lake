@@ -1,0 +1,172 @@
+{
+  "id": "meta_share",
+  "question": "Across online events pooled together, what percentage of all imported tournament entries used Dragapult? Include unclassified entrants in the population and report numerator and denominator.",
+  "calls": [
+    {
+      "tool": "get_model",
+      "arguments": {
+        "model_name": "monthly_meta_shifts"
+      },
+      "result": {
+        "name": "monthly_meta_shifts",
+        "dimensions": {
+          "tournament_month": {
+            "description": "Month of the tournaments.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "archetype": {
+            "description": "Deck archetype.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "source": {
+            "description": "Tournament data provider.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "event_type": {
+            "description": "Tournament setting: online, in_person, or unknown.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "meta_share": {
+            "description": "Per-month/source/setting/archetype percentage; display at that grain, do not sum or average.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          }
+        },
+        "measures": {
+          "archetype_participants": {
+            "description": "Number of players using this archetype."
+          },
+          "total_matches": {
+            "description": "Total matches played by this archetype in the month."
+          },
+          "total_wins": {
+            "description": "Total wins by this archetype in the month."
+          },
+          "avg_win_rate": {
+            "description": "Pooled wins / recorded player-results, as a percentage (0-100); ties stay in the denominator. Null with no results."
+          }
+        },
+        "calculated_measures": []
+      },
+      "is_error": false
+    },
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "monthly_meta_shifts",
+        "measures": [
+          "archetype_participants"
+        ],
+        "filters": [
+          {
+            "field": "event_type",
+            "operator": "=",
+            "value": "online"
+          },
+          {
+            "field": "archetype",
+            "operator": "=",
+            "value": "Dragapult"
+          }
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 1,
+        "columns": [
+          "archetype_participants"
+        ],
+        "records": [
+          {
+            "archetype_participants": 3
+          }
+        ]
+      },
+      "is_error": false
+    },
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "monthly_populations",
+        "measures": [
+          "total_participants"
+        ],
+        "filters": [
+          {
+            "field": "event_type",
+            "operator": "=",
+            "value": "online"
+          }
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 1,
+        "columns": [
+          "total_participants"
+        ],
+        "records": [
+          {
+            "total_participants": 7
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "answer": {
+    "facts": {
+      "archetype_entries": 3,
+      "all_entries": 7,
+      "meta_share": 42.8571428571
+    },
+    "explanation": "The online Dragapult numerator is 3 entries. The separately queried online population is 7 entries, including unclassified entrants. The pooled share is 3/7 times 100 = 42.86%; filtering the population to Dragapult would incorrectly shrink the denominator.",
+    "caveats": [
+      "unclassified_in_denominator",
+      "ratio_of_counts"
+    ]
+  },
+  "seconds": 17.617,
+  "candidate": "ChatGPT Work assistant",
+  "fixture_sha256": "ea1b57d2d6496c9dee4de729fd3e817fd5fec5d53b191a42442d0a82d6122ade",
+  "timestamp": "2026-11-02T03:03:33.690641+00:00",
+  "candidate_input": {
+    "event": "question",
+    "id": "meta_share",
+    "question": "Across online events pooled together, what percentage of all imported tournament entries used Dragapult? Include unclassified entrants in the population and report numerator and denominator.",
+    "instructions": "Answer by choosing and calling the available MCP tools. Do not access local files, oracle answers, or external sources. Return a factual explanation grounded in tool results. Percentages use 0-100. Report missing values as null.",
+    "answer_schema": {
+      "action": "answer",
+      "facts": [
+        "archetype_entries",
+        "all_entries",
+        "meta_share"
+      ],
+      "explanation": "Your reasoning and conclusion",
+      "caveats": [
+        "unclassified_in_denominator",
+        "ratio_of_counts"
+      ]
+    },
+    "protocol": {
+      "tool_call": {
+        "action": "call",
+        "tool": "tool_name",
+        "arguments": {}
+      },
+      "final": {
+        "action": "answer",
+        "facts": {},
+        "explanation": "...",
+        "caveats": []
+      }
+    },
+    "tools_reference": "tools.json"
+  },
+  "run_type": "guided_self_evaluation",
+  "blind": false
+}

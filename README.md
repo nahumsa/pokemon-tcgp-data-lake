@@ -260,19 +260,11 @@ Our GitHub Actions pipeline (`.github/workflows/ci.yml`) runs Ruff, dbt project 
 ---
 
 
+## Evaluate an agent through MCP
 
-## Validate an analytical answer
-
-Follow the [analysis validation workflow](docs/analysis_validation.md) before
-returning analytical conclusions. It checks question scope, populations, metric
-choice, aggregation, stratified comparisons, evidence, and limits on inference.
-
-```bash
-uv run python scripts/validate.py
-uv run python scripts/validate.py --analysis docs/analysis_example.json
-```
-
-The second command also checks a structured claim/evidence record. The supplied
-record is a synthetic example. Logs and JUnit results go to `validation-results/`;
-CI runs the same routine and uploads those results. See the
-[review and improvement report](docs/validation_review.md) for findings and gaps.
+The [MCP analytics benchmark](evaluation/README.md) runs actual question-to-answer
+evaluations through the stdio server, records tool calls and answers, and grades
+answers against an independent raw-record reference. The initial guided assistant
+run answered 12/12 questions correctly; its [report and traces](evaluation/baselines/assistant-first/report.md)
+are committed for review. This is a synthetic, non-blinded baseline, not a general
+accuracy estimate. CI checks the transport and evaluator, not a new model run.

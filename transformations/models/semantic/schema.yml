@@ -70,15 +70,15 @@ models:
         tests:
           - unique
           - not_null
-      - name: tournament_name
+      - name: name
         description: "Name of the tournament."
-      - name: tournament_date
+      - name: date
         description: "Date when the tournament was held."
       - name: format
         description: "Tournament format (e.g., Standard)."
-      - name: player_count
+      - name: players
         description: "Number of players in the tournament."
-      - name: winner_name
+      - name: winner
         description: "Name of the tournament winner."
 
   - name: dim_deck_archetypes
