@@ -1,0 +1,59 @@
+version: 2
+
+models:
+  - name: fct_matchup_results
+    description: Directed result provenance and explicit missing-history markers for imported entrants.
+    columns:
+      - name: participant_id
+        tests: [not_null]
+      - name: tournament_id
+        tests: [not_null]
+      - name: matchup_type
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [played, mirror, bye, unknown_archetype, invalid_result, missing_history]
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [participant_id, match_id]
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: sample_size = wins + losses + ties
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: recorded_results + participants_without_history = 1
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: recorded_results = sample_size + bye_results + mirror_results + unknown_archetype_results + invalid_results
+  - name: mart_matchup_evidence
+    description: Event/format/period/directed-archetype/type counts; pool counts before estimating rates or intervals.
+    columns:
+      - name: tournament_id
+        tests: [not_null]
+      - name: game
+        description: Declared current importer scope, not newly extracted game metadata. Pocket is unsupported.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [PTCG]
+      - name: tournament_url
+        tests: [not_null]
+      - name: tournament_date
+        tests: [not_null]
+      - name: sample_size
+        description: Valid non-mirror known-archetype directed results. Byes and excluded categories are separate.
+      - name: participants_without_history
+        description: Entries with no own imported result records, not a count of missing rounds.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [tournament_id, game, format, set_name, source, event_type, p1_archetype, p1_sub_archetype, p2_archetype, p2_sub_archetype, matchup_type]
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: sample_size = wins + losses + ties
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: recorded_results = sample_size + bye_results + mirror_results + unknown_archetype_results + invalid_results

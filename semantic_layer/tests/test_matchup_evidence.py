@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 import yaml
 from boring_semantic_layer import MCPSemanticModel, from_config
+from fastmcp import Client
 from jinja2 import Environment, StrictUndefined
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -18,7 +19,9 @@ def build(con, name, layer):
     sql = (ROOT / f"transformations/models/{layer}/{name}.sql").read_text()
     con.execute(
         f"create table {name} as "
-        + Environment(undefined=StrictUndefined).from_string(sql).render(ref=lambda n: n)
+        + Environment(undefined=StrictUndefined)
+        .from_string(sql)
+        .render(ref=lambda n: n)
     )
 
 
@@ -83,13 +86,23 @@ def test_result_drilldown_preserves_event_and_record_provenance(observations):
             match_id, participant_id, opponent_id, round, result
         from fct_matchup_results where match_id='m3'
     """).fetchone() == (
-        "https://example/e1", pd.Timestamp("2026-10-01").date(), "PTCG", "STANDARD",
-        "m3", "p1", "p2", "2", "TIE",
+        "https://example/e1",
+        pd.Timestamp("2026-10-01").date(),
+        "PTCG",
+        "STANDARD",
+        "m3",
+        "p1",
+        "p2",
+        "2",
+        "TIE",
     )
-    assert observations.execute("""
+    assert (
+        observations.execute("""
         select count(*) from mart_matchup_evidence
         where tournament_id='e2' and format='EXPANDED' and source='limitless_play'
-    """).fetchone()[0] == 1
+    """).fetchone()[0]
+        == 1
+    )
 
 
 def test_missing_history_is_not_a_loss_or_zero_percent(observations):
@@ -118,15 +131,27 @@ def semantic():
         ) t(tournament_id, game, format, tournament_date, matchup_type,
             sample_size, wins, losses, ties)
     """)
-    yield from_config({"matchup_evidence": config}, tables={config["table"]: con.table(config["table"])})["matchup_evidence"]
+    yield from_config(
+        {"matchup_evidence": config},
+        tables={config["table"]: con.table(config["table"])},
+    )["matchup_evidence"]
     con.disconnect()
 
 
 def test_wilson_interval_uses_pooled_counts_and_ties_as_nonwins(semantic):
-    row = semantic.query(
-        measures=["sample_size", "win_rate", "win_rate_lower_95", "win_rate_upper_95"],
-        filters=[lambda t: t.format == "STANDARD"],
-    ).execute().iloc[0]
+    row = (
+        semantic.query(
+            measures=[
+                "sample_size",
+                "win_rate",
+                "win_rate_lower_95",
+                "win_rate_upper_95",
+            ],
+            filters=[lambda t: t.format == "STANDARD"],
+        )
+        .execute()
+        .iloc[0]
+    )
     assert row["sample_size"] == 10
     assert row["win_rate"] == 10
     assert row["win_rate_lower_95"] == pytest.approx(1.7876, abs=0.001)
@@ -135,19 +160,27 @@ def test_wilson_interval_uses_pooled_counts_and_ties_as_nonwins(semantic):
 
 @pytest.mark.parametrize("event", ["e1", "e2"])
 def test_small_all_win_and_no_win_samples_have_bounded_intervals(semantic, event):
-    row = semantic.query(
-        measures=["win_rate", "win_rate_lower_95", "win_rate_upper_95"],
-        filters=[lambda t: t.tournament_id == event],
-    ).execute().iloc[0]
+    row = (
+        semantic.query(
+            measures=["win_rate", "win_rate_lower_95", "win_rate_upper_95"],
+            filters=[lambda t: t.tournament_id == event],
+        )
+        .execute()
+        .iloc[0]
+    )
     assert 0 <= row["win_rate_lower_95"] <= row["win_rate"]
     assert row["win_rate"] <= row["win_rate_upper_95"] <= 100
 
 
 def test_zero_samples_return_null_rates_and_intervals(semantic):
-    row = semantic.query(
-        measures=["win_rate", "win_rate_lower_95", "win_rate_upper_95"],
-        filters=[lambda t: t.tournament_id == "e4"],
-    ).execute().iloc[0]
+    row = (
+        semantic.query(
+            measures=["win_rate", "win_rate_lower_95", "win_rate_upper_95"],
+            filters=[lambda t: t.tournament_id == "e4"],
+        )
+        .execute()
+        .iloc[0]
+    )
     assert row.isna().all()
 
 
@@ -175,7 +208,8 @@ def test_sample_filter_does_not_mix_formats_or_apply_limit_before_threshold(sema
     assert output["rows"][0]["format"] == "EXPANDED"
     assert output["rows"][0]["sample_size"] == 90
     output = query_matchup_evidence(
-        semantic, min_sample_size=11,
+        semantic,
+        min_sample_size=11,
         filters=[{"field": "format", "operator": "=", "value": "STANDARD"}],
     )
     assert output["rows"] == []
@@ -186,10 +220,15 @@ def test_mcp_tool_exposes_post_pool_sample_filter(semantic):
 
     server = MCPSemanticModel(models={"matchup_evidence": semantic})
     register_matchup_tools(server, {"matchup_evidence": semantic})
-    result = asyncio.run(server.call_tool(
-        "query_matchup_evidence_with_minimum_sample", {"min_sample_size": 10}
-    ))
-    assert result[1]["qualifying_groups"] == 2
+
+    async def call():
+        async with Client(server) as client:
+            return await client.call_tool(
+                "query_matchup_evidence_with_minimum_sample", {"min_sample_size": 10}
+            )
+
+    result = asyncio.run(call())
+    assert result.data["qualifying_groups"] == 2
 
 
 def test_sample_measure_cannot_be_misused_as_a_pre_pool_filter(semantic):

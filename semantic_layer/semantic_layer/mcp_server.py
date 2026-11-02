@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Dict, Any
 from boring_semantic_layer import MCPSemanticModel, from_yaml
 
+from .matchups import register_matchup_tools
+
 # Define paths
 base_dir: Path = Path(__file__).parent
 yaml_path: Path = base_dir / "boring.yml"
@@ -19,6 +21,8 @@ con: Any = ibis.duckdb.connect(
     str(base_dir.parent.parent / "pokemon_tcg_pipeline.duckdb")
 )
 tables: Dict[str, Any] = {
+    "mart_matchup_evidence": con.table("mart_matchup_evidence", database="main_consumption"),
+    "fct_matchup_results": con.table("fct_matchup_results", database="main_semantic"),
     "mart_archetype_stats": con.table(
         "mart_archetype_stats", database="main_consumption"
     ),
@@ -63,6 +67,8 @@ server: MCPSemanticModel = MCPSemanticModel(
     models=models,
     name="Pokemon TCG Data Lake Semantic Layer Server",
 )
+
+register_matchup_tools(server, models)
 
 if __name__ == "__main__":
     # Start the MCP server using stdio transport
