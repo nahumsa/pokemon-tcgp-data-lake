@@ -3,7 +3,7 @@ pokemon_tcg_transform:
   outputs:
     dev:
       type: duckdb
-      path: "../pokemon_tcg_pipeline.duckdb"
+      path: "{{ env_var('POKEMON_TCG_DB_PATH', '../.data/pokemon_tcg_pipeline.duckdb') }}"
     unit:
       type: duckdb
       path: ":memory:"

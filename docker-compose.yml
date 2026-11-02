@@ -4,16 +4,22 @@ services:
     build:
       context: .
       dockerfile: ingestion/Dockerfile
+    environment:
+      POKEMON_TCG_DB_PATH: /app/.data/pokemon_tcg_pipeline.duckdb
+      POKEMON_TCG_DLT_STATE_DIR: /app/.data/dlt/pipelines
     volumes:
-      - ./pokemon_tcg_pipeline.duckdb:/app/pokemon_tcg_pipeline.duckdb
+      - ${DATA_DIR:-./.data}:/app/.data
 
   # Transformation Service: Runs dbt models
   transformations:
     build:
       context: .
       dockerfile: transformations/Dockerfile
+    environment:
+      POKEMON_TCG_DB_PATH: /app/.data/pokemon_tcg_pipeline.duckdb
+      POKEMON_TCG_DLT_STATE_DIR: /app/.data/dlt/pipelines
     volumes:
-      - ./pokemon_tcg_pipeline.duckdb:/app/pokemon_tcg_pipeline.duckdb
+      - ${DATA_DIR:-./.data}:/app/.data
       - ./transformations:/app/transformations
     working_dir: /app/transformations
     command: run --profiles-dir .

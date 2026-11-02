@@ -9,9 +9,9 @@ UV ?= uv
 DBT = $(UV) run --locked --package pokemon-tcg-transformations dbt
 SQL_PATHS ?= models
 
-.PHONY: check-paths help setup dbt-deps check lint lint-sql parse test-python test-sql
+.PHONY: check-paths help setup dbt-deps check lint lint-sql parse test-python test-sql dbt-build dbt-test ingest ingest-labs
 help:
-	@printf '%s\n' 'setup        Install locked workspace and dbt dependencies' 'check        Run the same data-independent checks as CI' 'lint         Check Python with Ruff' 'parse        Validate dbt project configuration' 'lint-sql     Check SQL_PATHS with SQLFluff (default: models)' 'test-python  Test ingestion and semantic Python logic' 'test-sql     Run native dbt unit tests in memory'
+	@printf '%s\n' 'setup        Install locked workspace and dbt dependencies' 'check        Run the same data-independent checks as CI' 'lint         Check Python with Ruff' 'parse        Validate dbt project configuration' 'lint-sql     Check SQL_PATHS with SQLFluff (default: models)' 'test-python  Test ingestion and semantic Python logic' 'test-sql     Run native dbt unit tests in memory' 'dbt-build    Seed and build models against the configured database' 'dbt-test     Run data tests against a built database' 'ingest       Run the Play importer with optional INGEST_ARGS' 'ingest-labs  Run the Labs importer with optional INGEST_ARGS'
 
 setup:
 	cd "$(ROOT)" && $(UV) sync --all-packages --locked
@@ -40,3 +40,17 @@ test-python:
 
 test-sql:
 	cd "$(ROOT)/transformations" && $(DBT) test --profiles-dir . --target unit --select test_type:unit
+
+dbt-build: check-paths
+	mkdir -p "$(dir $(POKEMON_TCG_DB_PATH))"
+	cd "$(ROOT)/transformations" && $(DBT) seed --profiles-dir .
+	cd "$(ROOT)/transformations" && $(DBT) run --profiles-dir .
+
+dbt-test: check-paths
+	cd "$(ROOT)/transformations" && $(DBT) test --profiles-dir . --select test_type:data
+
+ingest: check-paths
+	cd "$(ROOT)" && $(UV) run --locked --package pokemon-tcg-ingestion python -m ingestion.main $(INGEST_ARGS)
+
+ingest-labs: check-paths
+	cd "$(ROOT)" && $(UV) run --locked --package pokemon-tcg-ingestion python -m ingestion.labs $(INGEST_ARGS)
