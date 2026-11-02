@@ -13,7 +13,7 @@ null, not zero or infinity. Quantity averages use copies per observation.
 | `archetype_matchups.win_ties_rate` | Wins + ties | Recorded player-results, % | Same matchup grain |
 | `deck_analysis.avg_win_rate` | Wins | Recorded player-results, % | Tournament entry |
 | `card_staples.avg_mean_quantity` | Copies in included decks | Included functional-card/deck memberships, copies | Set, source, event type, archetype, card name, card kind |
-| `matchup_suggestions.avg_win_rate_with_card` | Wins with card | With-card player-result observations, % | Set, source, event type, archetype, opponent archetype, card |
+| `matchup_suggestions.avg_win_rate_with_card` | Wins with card | With-card player-result observations, % | Set, game, format, source, event type, archetype, opponent archetype, card |
 | `matchup_suggestions.avg_win_rate_without_card` | Wins without card | Without-card player-result observations, % | Same suggestion grain |
 | `matchup_suggestions.avg_relevance_score` | With-card pooled rate minus without-card pooled rate | Percentage points | Same suggestion grain |
 | `matchup_suggestions.avg_suggested_quantity` | Copies in winning with-card results | Winning with-card player-results, copies | Same suggestion grain |
@@ -55,9 +55,80 @@ opponents; these are not deduplicated physical tournament matches.
   without-card populations overlap across cards and must not be read as unique
   matches. Suggested quantities weight a deck once per winning recorded result.
 
-The suggestions mart exposes only cohorts/cards passing its existing difficulty,
-sample, inclusion, relevance, and top-five filters. Pooled suggestion rates cover
-those retained rows, not every historical cohort. They do not establish causality.
+## Observed card associations
+
+`matchup_suggestions` and its `suggested_` / `avg_relevance_score` names remain
+for compatibility. They describe observed associations, not improvements caused
+by adding a card. The mart now exposes all observed card/comparison rows,
+including missing comparison groups and small samples. Previous difficulty,
+staple-inclusion, positive-difference and top-five filters hid that evidence and
+have been removed. Existing clients should explicitly select the evidence status
+and rank described below rather than assuming every returned row is a suggestion.
+
+Each row compares **the same game, recorded format, set period, provider, event
+setting, primary archetype and opponent archetype**. Unknown periods/formats and
+unrecognized outcomes are excluded. Both current importers support Pokemon TCG
+only (`GameEnum.TCG` and the Labs `/tcg` endpoint), so `game = 'PTCG'` declares the
+supported importer scope, not newly observed raw game metadata. Pocket is not
+supported by this model; explicit game identity must be propagated before any
+additional game's ingestion is enabled. Set periods retain the existing calendar
+assignment; this change does not implement a new legality calendar.
+
+Only results with known own/opponent classifications enter the recorded matchup
+population. A result needs published own-card rows to enter either comparison
+group. Missing own lists are **not** evidence that a card was absent. Mirrored
+player perspectives retain their directed matchup meaning; these counts are not
+independent physical matches. Alternate printings are combined by existing card
+names within a deck, preserving the current functional-card convention.
+
+The row exposes with/without wins, losses, draws, player-result denominators and
+distinct tournament-entry counts. `sample_size` is the with-card denominator;
+`matches_without_card` is the without-card denominator. Both win rates are
+`100 * wins / (wins + losses + draws)`. Empty denominators and the resulting
+rate difference are null, not zero. `decklist_match_coverage` is
+`100 * matches_with_decklists / recorded_match_count`; its denominator excludes
+unclassified/unknown-opponent results, so it is not overall event completeness.
+Coverage totals repeat across cards: filter one card and cohort before using them.
+
+### Evidence policy and ranking
+
+The default policy requires **10 recorded results and 3 distinct tournament
+entries in each comparison group**. Entries are not resolved lifetime player
+identities; one pilot can appear at multiple events. Repeated results from one
+entry do not satisfy the three-entry gate.
+
+| `evidence_status` | Meaning | `association_rank` |
+|---|---|---|
+| `missing_comparison_group` | No without-card observations | null |
+| `insufficient_matches` | Either group has fewer than the configured results | null |
+| `insufficient_decks` | Both result counts pass, but either entry count is too small | null |
+| `meets_sample_thresholds` | Both configured sample gates pass | Descriptive within-cohort rank |
+
+Ranks order the observed percentage-point difference descending, then with-card
+sample size descending, then card name for a stable tie-break. All qualified
+associations, including zero/negative differences, remain available. Filter
+`evidence_status = 'meets_sample_thresholds'` and `association_rank <= 5` for a
+five-row view within one compatible cohort. Do not combine different formats or
+periods before interpreting a comparison, or aggregate stored ranks/coverage.
+The pooled rate aliases remain available; filter compatible cohorts and one card
+before interpreting their results.
+
+Configure the policy with positive integer dbt variables; the active thresholds
+are also exposed in every result and in the semantic dimensions. Restart the
+semantic server after rebuilding so it loads the new fields:
+
+```bash
+# From transformations/
+uv run dbt run --profiles-dir . --select mart_archetype_matchup_suggestions \
+  --vars '{"association_min_matches": 20, "association_min_decks": 5}'
+```
+
+Meeting these policy thresholds is **not** statistical significance, a confidence
+interval or proof of causation. Pilot strength, deck variants, event selection,
+correlated card choices and missing lists can all explain differences. Suggested
+quantities describe card copies in observed lists, weighted once per recorded
+win; they are not an optimized prescription. Null quantity means no observed
+with-card wins, not a recommendation to play zero copies.
 
 ## Migration and validation
 

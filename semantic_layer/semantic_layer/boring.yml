@@ -181,33 +181,59 @@ card_staples:
 matchup_suggestions:
   table: mart_archetype_matchup_suggestions
   database: main_consumption
-  description: Data-driven card suggestions to improve difficult archetype matchups. Use this for tech card and quantity recommendations.
+  description: >-
+    Observational card associations within compatible TCG game/format/period/archetype/source/setting cohorts.
+    Compare with-card and without-card outcomes, deck samples and coverage. Filter evidence_status to
+    meets_sample_thresholds before using association_rank; sample thresholds are not statistical significance.
+    Pilot strength, deck variants, event selection and correlated card choices can explain differences.
+    These results do not establish that adding a card changes matchup performance.
   dimensions:
+    game:
+      expr: _.game
+      description: "Supported importer game, currently PTCG only; this model does not provide Pocket comparisons."
+    format:
+      expr: _.format
+      description: "Recorded tournament format. Filter one compatible game/format/period cohort before interpreting rates."
     set_name:
       expr: _.set_name
-      description: The set or meta period.
+      description: "Existing set/meta period assignment, not a new legality calendar."
     archetype:
       expr: _.archetype
-      description: The archetype receiving the suggestion.
+      description: "Primary archetype in the observed comparison."
     opponent_archetype:
       expr: _.opponent_archetype
-      description: The difficult opposing archetype.
+      description: "Opposing archetype in the observed comparison."
     suggested_card:
       expr: _.suggested_card
-      description: Suggested tech card.
+      description: "Legacy field name for the observed card; inclusion is not a recommendation to add it."
     card_kind:
       expr: _.card_kind
-      description: Type of card.
+      description: "Recorded card type."
     source:
       expr: _.source
-      description: Tournament data provider.
+      description: "Tournament data provider."
     event_type:
       expr: _.event_type
-      description: 'Tournament setting: online, in_person, or unknown.'
+      description: "Tournament setting: online, in_person, or unknown."
+    evidence_status:
+      expr: _.evidence_status
+      description: "missing_comparison_group, insufficient_matches, insufficient_decks, or meets_sample_thresholds. Thresholds do not establish significance or causality."
+    min_matches_per_group:
+      expr: _.min_matches_per_group
+      description: "Configured minimum recorded results in each comparison group."
+    min_decks_per_group:
+      expr: _.min_decks_per_group
+      description: "Configured minimum distinct tournament entries in each group; not independent player identities."
+    decklist_match_coverage:
+      expr: _.decklist_match_coverage
+      description: "Percentage of valid classified matchup results with published own-card rows; display at the full cohort/card grain."
+    association_rank:
+      expr: _.association_rank
+      description: "Descriptive within-cohort ranking by observed rate difference, only after both group thresholds pass. Null otherwise."
   measures:
     sample_size:
       expr: _.sample_size.sum()
-      description: Card-match observations; group/filter to one suggested card to count matches.
+      description: With-card player-result observations; filter one card and compatible cohorts.
     # Bracket access keeps these as Ibis count expressions; BSL 0.3.7 cannot
     # hash nullif post-operations on its inferred calculated-measure nodes.
     avg_win_rate_with_card:
@@ -218,10 +244,43 @@ matchup_suggestions:
       description: Pooled wins without card / without-card observations, percentage (0-100); ties count as non-wins. Null with no observations.
     avg_relevance_score:
       expr: (_["wins_with_card"].sum() * 100.0 / _["sample_size"].sum().nullif(0)) - (_["wins_without_card"].sum() * 100.0 / _["matches_without_card"].sum().nullif(0))
-      description: Difference of pooled with-card and without-card win percentages, in percentage points. Null if either group has no observations.
+      description: Observed difference of pooled win percentages, in percentage points; not a causal effect. Null without both groups. Filter compatible game/format/period cohorts.
     avg_suggested_quantity:
       expr: _["quantity_in_wins"].sum() * 1.0 / _["wins_with_card"].sum().nullif(0)
-      description: Pooled card copies in wins / winning card-match observations; null with no wins. Repeated winning matches weight a deck more than once.
+      description: Descriptive copies from observed lists, weighted once per recorded win; not an optimized prescription. Null with no wins.
+    matches_without_card:
+      expr: _["matches_without_card"].sum()
+      description: "Without-card player-result observations; filter one card and compatible cohorts."
+    decks_with_card:
+      expr: _["decks_with_card"].sum()
+      description: "With-card tournament-entry observations; filter one card, matchup and cohort. Repeated people across events are not resolved."
+    decks_without_card:
+      expr: _["decks_without_card"].sum()
+      description: "Without-card tournament-entry observations; filter one card, matchup and cohort."
+    wins_with_card:
+      expr: _["wins_with_card"].sum()
+      description: "Observed wins in the with-card comparison group."
+    losses_with_card:
+      expr: _["losses_with_card"].sum()
+      description: "Observed losses in the with-card comparison group."
+    ties_with_card:
+      expr: _["ties_with_card"].sum()
+      description: "Observed draws in the with-card comparison group."
+    wins_without_card:
+      expr: _["wins_without_card"].sum()
+      description: "Observed wins in the without-card comparison group."
+    losses_without_card:
+      expr: _["losses_without_card"].sum()
+      description: "Observed losses in the without-card comparison group."
+    ties_without_card:
+      expr: _["ties_without_card"].sum()
+      description: "Observed draws in the without-card comparison group."
+    recorded_match_count:
+      expr: _["recorded_match_count"].sum()
+      description: "Valid classified player-results before own-decklist availability filtering; repeated across cards, so filter one card."
+    matches_with_decklists:
+      expr: _["matches_with_decklists"].sum()
+      description: "Valid classified results with published own-card rows; repeated across cards, so filter one card."
 tournament_analysis:
   table: mart_tournament_analysis
   database: main_consumption
