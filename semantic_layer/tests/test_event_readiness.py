@@ -77,3 +77,18 @@ def test_standings_report_can_explicitly_relax_deck_requirements(complete_event)
 def test_invalid_policy_is_rejected(kwargs):
     with pytest.raises(ValueError):
         ReadinessPolicy(**kwargs)
+
+
+def test_report_section_discloses_zero_unknown_and_reasons(complete_event):
+    from semantic_layer.semantic_layer.readiness import coverage_section
+
+    complete_event.update(
+        tournament_url="https://labs.limitlesstcg.com/event",
+        decklist_coverage_pct=0,
+        history_coverage_pct=None,
+    )
+    section = coverage_section(complete_event, now=NOW)
+    assert "Decklists: 0.0%" in section
+    assert "History: unavailable" in section
+    assert "decklist_coverage_below_threshold" in section
+    assert complete_event["tournament_url"] in section

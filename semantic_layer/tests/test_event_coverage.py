@@ -82,3 +82,29 @@ def test_legacy_and_empty_events_have_unknown_extraction_coverage(coverage_db):
     assert event["decklist_coverage_pct"] is None
     assert event["classification_coverage_pct"] is None
     assert event["last_successful_ingestion_at"] is None
+
+
+def test_live_audit_check_detects_ingestion_after_transformation(coverage_db):
+    from semantic_layer.semantic_layer.readiness import read_event_coverage
+
+    # Materialize a model snapshot, then advance the raw audit independently.
+    coverage_db.execute(
+        "create schema main_consumption; create schema pokemon_tcg_data"
+    )
+    coverage_db.execute("""
+        create table main_consumption.mart_event_coverage as
+        select 'labs/event' tournament_url, timestamptz '2026-10-31T11:00:00Z' latest_load_at;
+        create table pokemon_tcg_data.ingestion_event_runs as
+        select 'labs/event' tournament_url, 'new' attempt_id, timestamptz '2026-10-31T12:00:00Z' loaded_at;
+    """)
+    event = read_event_coverage(coverage_db, "labs/event")
+    assert event["latest_load_at"].hour == 12
+    assert read_event_coverage(coverage_db, "unknown") is None
+
+
+def test_failed_event_without_tournament_metadata_is_visible(coverage_db):
+    coverage_db.execute("delete from dim_tournaments; delete from dim_participants")
+    event = coverage(coverage_db)
+    assert event["tournament_url"] == "labs/event"
+    assert event["tournament_name"] is None
+    assert event["source"] == "unknown"
