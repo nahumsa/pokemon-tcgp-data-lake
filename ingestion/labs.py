@@ -262,7 +262,7 @@ def load_data_rows(pipeline, rows):
 
 def ensure_sources(pipeline, *, include_event_sources=False):
     """Declare absent raw sources without inserting placeholder rows or altering existing schemas."""
-    if getattr(pipeline, "default_schema_name", True) is None:
+    if pipeline.default_schema_name is None:
         # A first failed event has not loaded data to initialize dlt's schema yet.
         pipeline.run([], table_name=TOURNAMENTS_TABLE)
     schema = pipeline.default_schema

@@ -105,6 +105,7 @@ def labs_pipeline(monkeypatch):
     from ingestion import labs
 
     pipeline = SimpleNamespace(
+        default_schema_name="labs_test",
         default_schema=dlt.Schema("labs_test"),
         run=Mock(return_value="Loaded fixture"),
         sync_schema=Mock(),

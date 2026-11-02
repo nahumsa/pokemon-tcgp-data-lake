@@ -148,6 +148,15 @@ For match-level modeling, join `fct_matches` to `dim_tournaments` on
 online and in-person populations can be filtered separately or deliberately pooled.
 Win rates pool wins and match counts instead of averaging subgroup percentages.
 
+### Event coverage and readiness
+
+The MCP `event_coverage` model exposes event completeness, extraction failures,
+and freshness. The [coverage contract](transformations/docs/event_coverage.md)
+documents denominators and a configurable readiness CLI with JSON/Markdown
+output. A completed source event can still lack lists or histories and fail
+report readiness. See the [real-data validation](transformations/docs/event_coverage_validation.md)
+for sourced examples and reproducible commands.
+
 ### Archetype classification
 
 See the [classification contract](transformations/docs/archetype_classification.md)
