@@ -15,7 +15,6 @@ REQUEST_RETRY_STATUS_CODES = (429, 500, 502, 503, 504)
 REQUEST_RETRY_ALLOWED_METHODS = frozenset(["GET"])
 
 PIPELINE_NAME = "pokemon_tcg_pipeline"
-PIPELINE_DESTINATION = "duckdb"
 PIPELINE_DATASET_NAME = "pokemon_tcg_data"
 
 TOURNAMENTS_TABLE = "tournaments"

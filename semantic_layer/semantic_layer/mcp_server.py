@@ -5,6 +5,7 @@ Exposes semantic models for archetypes, cards, and matches via Model Context Pro
 """
 
 import ibis
+import os
 from pathlib import Path
 from typing import Dict, Any
 from boring_semantic_layer import MCPSemanticModel, from_yaml
@@ -15,9 +16,13 @@ yaml_path: Path = base_dir / "boring.yml"
 
 # Pre-load tables from specific DuckDB schemas
 # Boring Semantic Layer uses Ibis under the hood
-con: Any = ibis.duckdb.connect(
-    str(base_dir.parent.parent / "pokemon_tcg_pipeline.duckdb")
-)
+database_path = Path(os.environ.get(
+    "POKEMON_TCG_DB_PATH",
+    str(base_dir.parent.parent / ".data" / "pokemon_tcg_pipeline.duckdb"),
+)).expanduser()
+if not database_path.is_absolute():
+    raise ValueError("POKEMON_TCG_DB_PATH must be an absolute path")
+con: Any = ibis.duckdb.connect(str(database_path))
 tables: Dict[str, Any] = {
     "mart_archetype_stats": con.table(
         "mart_archetype_stats", database="main_consumption"
