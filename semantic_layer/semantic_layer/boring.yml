@@ -450,3 +450,51 @@ tournament_matches:
     duplicate_perspective_record_count:
       expr: _.duplicate_perspective_record_count.sum()
       description: Extra player records within a reconciliation group.
+deck_classification:
+  table: dim_deck_classification
+  database: main_semantic
+  description: >-
+    One classification diagnostic per imported participant, including missing lists and unmatched decks.
+    Ambiguous card rules retain a deterministic winner; inspect top_rule_ids before interpreting it.
+    Source labels override card rules and may exist without published cards.
+  dimensions:
+    participant_id:
+      expr: _.participant_id
+      description: Event-specific participant key; join dim_participants for event provenance.
+    archetype:
+      expr: _.archetype
+      description: Selected parent archetype, null if unclassified.
+    sub_archetype:
+      expr: _.sub_archetype
+      description: Selected variant or provider label, null if unclassified.
+    classification_status:
+      expr: _.classification_status
+      description: matched, ambiguous, unmatched, missing_decklist, or source_label_mapped/unmapped/ambiguous.
+    classification_method:
+      expr: _.classification_method
+      description: card_rules, source_label_mapped, source_label_unmapped, or unclassified.
+    source_archetype_label:
+      expr: _.source_archetype_label
+      description: Original Labs label, independent of card-list availability.
+    selected_rule_id:
+      expr: _.selected_rule_id
+      description: Stable winning card-rule ID; null when a provider label wins or no rule matches.
+    matched_rule_ids:
+      expr: _.matched_rule_ids
+      description: Sorted comma-separated IDs of all matching card rules, including lower precedence rules.
+    top_rule_ids:
+      expr: _.top_rule_ids
+      description: Sorted IDs tied at the highest specificity and priority, before the stable ID tie-breaker.
+    matched_rule_count:
+      expr: _.matched_rule_count
+      description: Number of matching card rules, including lower precedence rules.
+    top_candidate_count:
+      expr: _.top_candidate_count
+      description: Distinct archetype/variant pairs among highest precedence card rules; greater than one signals ambiguity.
+    ruleset_version:
+      expr: _.ruleset_version
+      description: Algorithm version and content fingerprint of the complete classification seed.
+  measures:
+    participants:
+      expr: _.participant_id.nunique()
+      description: Imported participants, including unclassified entrants; filter by classification_status for coverage.
