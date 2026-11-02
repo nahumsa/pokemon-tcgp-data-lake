@@ -40,7 +40,8 @@ calling `query_model`. `semantic_layer/boring.yml` is the single model registry,
 including table names and schemas. Do not maintain another table map in a client.
 
 Follow the [metric contract](docs/metrics.md),
-[match-count contract](../transformations/docs/match_counts.md). For analytical answers:
+[match-count contract](../transformations/docs/match_counts.md), and
+[component agent instructions](AGENTS.md). For analytical answers:
 
 - Identify game/source, event or period, actual supported filters, and units.
 - Include supporting player/deck/match sample counts and provenance links.
