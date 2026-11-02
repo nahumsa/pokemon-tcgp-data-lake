@@ -1,0 +1,127 @@
+{
+  "id": "real_entries",
+  "question": "How many imported tournament entries are in this real-data snapshot? Distinguish entries from lifetime people.",
+  "calls": [
+    {
+      "tool": "list_models",
+      "arguments": {},
+      "result": {
+        "archetype_stats": "Semantic model: archetype_stats",
+        "monthly_meta_shifts": "Semantic model: monthly_meta_shifts",
+        "archetype_matchups": "Semantic model: archetype_matchups",
+        "cards_used": "Semantic model: cards_used",
+        "card_staples": "Semantic model: card_staples",
+        "matchup_suggestions": "Semantic model: matchup_suggestions",
+        "tournament_analysis": "Semantic model: tournament_analysis",
+        "deck_analysis": "Semantic model: deck_analysis",
+        "cards": "Semantic model: cards",
+        "matches": "Semantic model: matches",
+        "monthly_populations": "Semantic model: monthly_populations",
+        "archetype_deck_populations": "Semantic model: archetype_deck_populations",
+        "tournament_matches": "Semantic model: tournament_matches",
+        "deck_classification": "Semantic model: deck_classification"
+      },
+      "is_error": false
+    },
+    {
+      "tool": "get_model",
+      "arguments": {
+        "model_name": "monthly_populations"
+      },
+      "result": {
+        "name": "monthly_populations",
+        "dimensions": {
+          "tournament_month": {
+            "description": null,
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "source": {
+            "description": null,
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "event_type": {
+            "description": null,
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          }
+        },
+        "measures": {
+          "total_participants": {
+            "description": "Tournament entries, counted once per cohort; not distinct people across events."
+          }
+        },
+        "calculated_measures": []
+      },
+      "is_error": false
+    },
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "monthly_populations",
+        "measures": [
+          "total_participants"
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 1,
+        "columns": [
+          "total_participants"
+        ],
+        "records": [
+          {
+            "total_participants": 3973
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "candidate_input": {
+    "event": "question",
+    "id": "real_entries",
+    "question": "How many imported tournament entries are in this real-data snapshot? Distinguish entries from lifetime people.",
+    "instructions": "Answer by choosing and calling the available MCP tools. Do not access local files, oracle answers, or external sources. Return a factual explanation grounded in tool results. Percentages use 0-100. Report missing values as null.",
+    "answer_schema": {
+      "action": "answer",
+      "facts": [
+        "entries"
+      ],
+      "explanation": "Your reasoning and conclusion",
+      "caveats": [
+        "entries_not_people"
+      ]
+    },
+    "protocol": {
+      "tool_call": {
+        "action": "call",
+        "tool": "tool_name",
+        "arguments": {}
+      },
+      "final": {
+        "action": "answer",
+        "facts": {},
+        "explanation": "...",
+        "caveats": []
+      }
+    },
+    "tools_reference": "tools.json"
+  },
+  "answer": {
+    "facts": {
+      "entries": 3973
+    },
+    "explanation": "The population measure reports 3,973 imported tournament entries across the snapshot. The same person can enter more than one event, so this is not a lifetime distinct-person count.",
+    "caveats": [
+      "entries_not_people"
+    ]
+  },
+  "seconds": 15.354,
+  "candidate": "ChatGPT Work assistant / real-data self-evaluation",
+  "fixture_sha256": "ffc9fa0ff8e5fb60a6468a9ec372ed240e9b9d6746edde5edf5eaa940e11700a",
+  "timestamp": "2026-11-02T16:02:06.604450+00:00",
+  "run_type": "real_data_guided_self_evaluation",
+  "blind": false
+}

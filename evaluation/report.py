@@ -5,16 +5,18 @@ import json
 from pathlib import Path
 
 from .fixture import ROOT, oracle
-from .grade import grade
+from .grade import equivalent, grade
 
 
-def report(run):
-    questions = json.loads((ROOT / "evaluation/questions.json").read_text())
-    expected = oracle()
+def report(run, questions_path=None, expected_path=None):
+    questions = json.loads(
+        (questions_path or ROOT / "evaluation/questions.json").read_text()
+    )
+    expected = json.loads(expected_path.read_text()) if expected_path else oracle()
     lines = [
         "# MCP analytical evaluation",
         "",
-        "This is a controlled synthetic benchmark, not a live tournament report.",
+        "Answers are compared against the reference dataset selected for this run. See the snapshot manifest for scope.",
         "",
         "| Question | Verdict | Tool calls |",
         "|---|---|---|",
@@ -40,6 +42,21 @@ def report(run):
             "",
             "Trace: [" + path.name + "](" + path.name + ")",
         ]
+        details += [
+            "",
+            "| Fact | Agent answer | Independent reference | Match |",
+            "|---|---|---|---|",
+        ]
+        for key, reference in expected[question["id"]].items():
+            actual = record.get("answer", {}).get("facts", {}).get(key)
+
+            def display(value):
+                return json.dumps(value, ensure_ascii=False)
+
+            match = "yes" if equivalent(actual, reference) else "NO"
+            details.append(
+                f"| {key} | {display(actual)} | {display(reference)} | {match} |"
+            )
         if result["failures"]:
             details += ["", "Failures: " + "; ".join(result["failures"])]
     return "\n".join(lines + details) + "\n"
@@ -48,9 +65,11 @@ def report(run):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run", type=Path)
+    parser.add_argument("--questions", type=Path)
+    parser.add_argument("--expected", type=Path)
     args = parser.parse_args()
     destination = args.run / "report.md"
-    destination.write_text(report(args.run))
+    destination.write_text(report(args.run, args.questions, args.expected))
     print(destination)
 
 

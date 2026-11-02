@@ -79,7 +79,8 @@ When working on this codebase, assume one of the following roles based on the ta
 
 Use `evaluation/README.md` to evaluate the complete question-to-answer workflow.
 Run the real MCP server, let the candidate choose tools, retain its actual calls
-and final answer, and compare facts with the independent fixture oracle. Do not
+and final answer, and compare facts with independent raw-source reference queries on a frozen real
+snapshot (or the fixture oracle for explicitly synthetic tests). Do not
 label archived-answer replay or harness tests as a fresh agent evaluation. Report
 the candidate identity, dataset fingerprint, score, per-question failures, and
 whether the run was guided/blinded. Review the explanation for unsupported

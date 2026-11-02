@@ -131,7 +131,14 @@ async def evaluate(args):
     manifest = json.loads((work / "manifest.json").read_text())
     if hashlib.sha256(database.read_bytes()).hexdigest() != manifest["sha256"]:
         raise ValueError("Benchmark database differs from its manifest")
-    questions = json.loads(QUESTIONS.read_text())
+    question_path = args.questions or (
+        work / "questions.json" if not manifest.get("synthetic", True) else QUESTIONS
+    )
+    questions = json.loads(question_path.read_text())
+    expected_path = args.expected or work / "expected.json"
+    expected = json.loads(expected_path.read_text()) if expected_path.exists() else None
+    if not manifest.get("synthetic", True) and expected is None:
+        raise ValueError("Real-data evaluation requires independent expected answers")
     if args.question:
         questions = [q for q in questions if q["id"] == args.question]
         if not questions:
@@ -206,7 +213,7 @@ async def evaluate(args):
                     timestamp=datetime.now(timezone.utc).isoformat(),
                 )
                 write_json(output / f"{question['id']}.json", transcript)
-                result = grade(question, transcript)
+                result = grade(question, transcript, expected)
                 results.append(result)
                 print(json.dumps({"event": "graded", **result}), flush=True)
     summary = {
@@ -215,7 +222,14 @@ async def evaluate(args):
         "passed": sum(r["passed"] for r in results),
         "total": len(results),
         "results": results,
-        "scope": "Controlled synthetic benchmark; arithmetic and declared caveats are scored. Free-text explanation still needs review.",
+        "scope": (
+            "Controlled synthetic benchmark"
+            if manifest.get("synthetic", True)
+            else "Frozen real public tournament snapshot"
+        )
+        + "; facts and declared caveats are scored. Free-text explanation still needs review.",
+        "synthetic": manifest.get("synthetic", True),
+        "questions_sha256": hashlib.sha256(question_path.read_bytes()).hexdigest(),
     }
     write_json(output / "summary.json", summary)
     return 0 if summary["passed"] == summary["total"] else 1
@@ -232,6 +246,8 @@ def main():
         command.add_argument("--run-id", required=True)
         command.add_argument("--candidate", required=True)
         command.add_argument("--question")
+        command.add_argument("--questions", type=Path)
+        command.add_argument("--expected", type=Path)
         if mode == "run":
             command.add_argument("--candidate-command", required=True)
     args = parser.parse_args()

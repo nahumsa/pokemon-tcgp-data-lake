@@ -143,3 +143,41 @@ run candidates before using the score for model comparisons.
   repeated independent runs before asserting robust analytical performance.
 - Add a separate independent interpretation review and trace-grounding scorer;
   deterministic numeric correctness alone cannot assess arbitrary analytical prose.
+
+## Completed comparison on real tournament data
+
+The [real-data assessment](baselines/real-labs/README.md) uses a frozen public
+Limitless Labs snapshot of Gdańsk and Puebla: 3,973 entries, 2,222 published decks,
+and 33,027 player-result records. Eleven quantitative questions matched
+independent SQL over original API records; a future-winner question was correctly
+declined. The run used 23 actual MCP calls. See the comparison for coverage limits.
+
+To create another reproducible real-data comparison:
+
+```bash
+uv run python -m evaluation.real_data --work evaluation-results/real-data --latest 2
+uv run python -m evaluation.real_reference --work evaluation-results/real-data
+uv run python -m evaluation.run bridge --work evaluation-results/real-data \
+  --run-id actual-agent-001 --candidate 'assistant identity / real data'
+uv run python -m evaluation.report evaluation-results/real-data/actual-agent-001 \
+  --questions evaluation-results/real-data/questions.json \
+  --expected evaluation-results/real-data/expected.json
+```
+
+`real_data` caches the original API responses and normalized importer JSON. It
+loads those real records through an explicit raw-table adapter and runs the
+production dbt project. This isolates analytical validation from dlt runtime
+state; it does not validate the dlt loader. `real_reference` creates separate
+reference tables directly from API standings, pairings and decklists, then
+executes independent SQL without querying production marts or semantic measures.
+The classification contract's seed mapping is shared domain input, not a claim
+of independent archetype taxonomy. Current reference questions concern Labs
+Masters TCG events and the chosen entities (Dragapult, Dreepy and Dusknoir), so
+check applicability when selecting other events.
+
+Real-data runs require a custom question set and independent expected answers.
+The runner picks `questions.json` and `expected.json` beside a real-data manifest
+or accepts explicit `--questions`/`--expected` arguments. Raw source snapshots and
+full entrant rosters remain outside git; committed transcripts use aggregates
+and one explicitly requested public player example. No scheduled model job is
+implied by a stored successful run.
