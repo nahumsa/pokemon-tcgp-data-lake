@@ -262,6 +262,9 @@ def load_data_rows(pipeline, rows):
 
 def ensure_sources(pipeline, *, include_event_sources=False):
     """Declare absent raw sources without inserting placeholder rows or altering existing schemas."""
+    if getattr(pipeline, "default_schema_name", True) is None:
+        # A first failed event has not loaded data to initialize dlt's schema yet.
+        pipeline.run([], table_name=TOURNAMENTS_TABLE)
     schema = pipeline.default_schema
     source_tables = [
         (
@@ -323,6 +326,9 @@ def ensure_sources(pipeline, *, include_event_sources=False):
         )
     for table, parent, columns in source_tables:
         if table not in schema.tables:
+            key = TABLE_KEYS.get(table, [])
+            primary_keys = [key] if isinstance(key, str) else key
+            primary_keys = {name.lower() for name in primary_keys}
             table_schema = new_table(
                 table,
                 parent_table_name=parent,
@@ -341,11 +347,7 @@ def ensure_sources(pipeline, *, include_event_sources=False):
                     column["root_key"] = True
                 elif name == "_dlt_parent_id":
                     column["foreign_key"] = True
-                elif not parent and name in (
-                    [TABLE_KEYS[table]]
-                    if isinstance(TABLE_KEYS[table], str)
-                    else TABLE_KEYS[table]
-                ):
+                elif not parent and name in primary_keys:
                     column.update(primary_key=True, nullable=False)
             schema.update_table(table_schema)
     pipeline.sync_schema()

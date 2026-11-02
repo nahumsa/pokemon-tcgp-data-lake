@@ -124,6 +124,7 @@ def coverage_section(event, policy=None, *, now=None):
         f"Stored entrants: {observed if observed is not None else 'unavailable'}; "
         f"source expected: {expected if expected is not None else 'unavailable'}."
     )
+    lines.append("")
     for label, field in (
         ("Participants", "participant_coverage_pct"),
         ("Decklists", "decklist_coverage_pct"),

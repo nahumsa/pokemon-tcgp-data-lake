@@ -191,6 +191,7 @@ def test_first_failed_event_can_load_into_a_fresh_database(tmp_path, monkeypatch
     monkeypatch.setenv("NORMALIZE__WORKERS", "1")
     monkeypatch.setenv("LOAD__WORKERS", "1")
     database = tmp_path / "failed_event.duckdb"
+    duckdb.connect(str(database)).close()
     pipeline = dlt.pipeline(
         pipeline_name="failed_event_test",
         pipelines_dir=str(tmp_path / "state"),
