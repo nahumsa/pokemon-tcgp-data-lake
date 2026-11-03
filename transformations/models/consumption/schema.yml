@@ -247,3 +247,13 @@ models:
         - source
         - event_type
         - archetype
+
+- name: mart_event_coverage
+  description: "One row per stored or audited event. Latest extraction coverage and freshness stay separate from source completion."
+  columns:
+    - name: tournament_id
+      data_tests: [unique, not_null]
+    - name: tournament_url
+      data_tests: [unique, not_null]
+    - name: observed_participant_count
+      data_tests: [not_null]

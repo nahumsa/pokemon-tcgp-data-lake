@@ -105,6 +105,7 @@ def labs_pipeline(monkeypatch):
     from ingestion import labs
 
     pipeline = SimpleNamespace(
+        default_schema_name="labs_test",
         default_schema=dlt.Schema("labs_test"),
         run=Mock(return_value="Loaded fixture"),
         sync_schema=Mock(),
@@ -292,3 +293,15 @@ def test_empty_input_does_not_create_sources(labs_pipeline):
     labs.load_rows({table: [] for table in labs.TABLE_KEYS})
     labs_pipeline.run.assert_not_called()
     labs_pipeline.sync_schema.assert_not_called()
+
+
+def test_first_failed_event_declares_empty_sources_without_placeholder_rows(labs_pipeline):
+    from ingestion import labs
+    from ingestion.coverage import AUDIT_TABLE, build_audit
+
+    rows = {table: [] for table in labs.TABLE_KEYS}
+    rows[AUDIT_TABLE] = [build_audit({"tournament_page": "labs/failed"}, errors=["event"])]
+    labs.load_rows(rows)
+    assert set(labs.TABLE_KEYS) <= labs_pipeline.default_schema.tables.keys()
+    assert labs_pipeline.run.call_count == 1
+    assert labs_pipeline.run.call_args.kwargs["table_name"] == AUDIT_TABLE

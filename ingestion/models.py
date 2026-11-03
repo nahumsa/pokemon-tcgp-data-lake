@@ -47,6 +47,7 @@ class Participant(BaseModel):
 
 
 class Tournament(BaseModel):
+    completed: Optional[bool] = None
     source: str = "limitless_play"
     event_type: Optional[str] = None
     data_date: Annotated[Optional[str], Field(alias="data-date")] = None
