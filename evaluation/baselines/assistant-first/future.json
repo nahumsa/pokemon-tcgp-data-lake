@@ -1,0 +1,179 @@
+{
+  "id": "future",
+  "question": "Using this dataset alone, can you determine which archetype will win the next tournament? Give a supported answer rather than a fabricated prediction.",
+  "calls": [
+    {
+      "tool": "get_model",
+      "arguments": {
+        "model_name": "tournament_analysis"
+      },
+      "result": {
+        "name": "tournament_analysis",
+        "dimensions": {
+          "source": {
+            "description": "Data provider: limitless_play, limitless_labs, or unknown.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "event_type": {
+            "description": "Event setting: online, in_person, or unknown. Independent of data provider.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "tournament_id": {
+            "description": "Unique tournament identifier.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "tournament_name": {
+            "description": "Tournament name.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "tournament_date": {
+            "description": "Tournament date.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "format": {
+            "description": "Tournament format.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "winner_name": {
+            "description": "Tournament winner.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "set_name": {
+            "description": "The set or meta period assigned to the tournament.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          }
+        },
+        "measures": {
+          "player_count": {
+            "description": "Number of players in the tournament."
+          },
+          "total_matches": {
+            "description": "Deprecated alias for perspective_record_count; counts player records, including byes and unresolved records, not unique matches."
+          },
+          "perspective_record_count": {
+            "description": "Number of staged player-result records, including byes and unresolved records."
+          },
+          "unique_match_count": {
+            "description": "Observed unique played pairings with known players and rounds; excludes byes and unresolved pairings. Not a completeness guarantee."
+          },
+          "mirrored_match_count": {
+            "description": "Unique played pairings with histories for both players."
+          },
+          "one_sided_match_count": {
+            "description": "Unique played pairings with history for only one of the two known players."
+          },
+          "bye_record_count": {
+            "description": "Player records explicitly marked BYE; excluded from unique played matches."
+          },
+          "unresolved_perspective_record_count": {
+            "description": "Player records without a reliable played-match identity; inspect tournament_matches.resolution_reason."
+          },
+          "duplicate_perspective_record_count": {
+            "description": "Extra records for the same player within a reconciled group, including normalized-round duplicates."
+          },
+          "conflicting_outcome_match_count": {
+            "description": "Identified played pairings with contradictory outcomes. Included in unique_match_count; original outcomes are preserved."
+          },
+          "incomplete_outcome_match_count": {
+            "description": "Identified played pairings with at least one missing or unrecognized outcome. Included in unique_match_count."
+          }
+        },
+        "calculated_measures": []
+      },
+      "is_error": false
+    },
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "tournament_analysis",
+        "dimensions": [
+          "tournament_name",
+          "tournament_date",
+          "winner_name"
+        ],
+        "measures": [
+          "player_count"
+        ],
+        "order_by": [
+          [
+            "tournament_date",
+            "desc"
+          ]
+        ],
+        "limit": 1,
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 1,
+        "columns": [
+          "tournament_name",
+          "tournament_date",
+          "winner_name",
+          "player_count"
+        ],
+        "records": [
+          {
+            "tournament_name": "February Play",
+            "tournament_date": "2026-02-16T00:00:00.000",
+            "winner_name": "Alice",
+            "player_count": 3
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "answer": {
+    "facts": {
+      "answerable": false
+    },
+    "explanation": "The latest returned event is February Play on 2026-02-16. These are historical observations, not the result of the next tournament or a validated predictive model. The dataset alone cannot determine the next winning archetype, so I will not name a winner.",
+    "caveats": [
+      "future_outcome_not_observed"
+    ]
+  },
+  "seconds": 23.74,
+  "candidate": "ChatGPT Work assistant",
+  "fixture_sha256": "ea1b57d2d6496c9dee4de729fd3e817fd5fec5d53b191a42442d0a82d6122ade",
+  "timestamp": "2026-11-02T03:05:32.566167+00:00",
+  "candidate_input": {
+    "event": "question",
+    "id": "future",
+    "question": "Using this dataset alone, can you determine which archetype will win the next tournament? Give a supported answer rather than a fabricated prediction.",
+    "instructions": "Answer by choosing and calling the available MCP tools. Do not access local files, oracle answers, or external sources. Return a factual explanation grounded in tool results. Percentages use 0-100. Report missing values as null.",
+    "answer_schema": {
+      "action": "answer",
+      "facts": [
+        "answerable"
+      ],
+      "explanation": "Your reasoning and conclusion",
+      "caveats": [
+        "future_outcome_not_observed"
+      ]
+    },
+    "protocol": {
+      "tool_call": {
+        "action": "call",
+        "tool": "tool_name",
+        "arguments": {}
+      },
+      "final": {
+        "action": "answer",
+        "facts": {},
+        "explanation": "...",
+        "caveats": []
+      }
+    },
+    "tools_reference": "tools.json"
+  },
+  "run_type": "guided_self_evaluation",
+  "blind": false
+}

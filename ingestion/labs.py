@@ -18,7 +18,6 @@ from .constants import (
     PARTICIPANT_MATCHES_PRIMARY_KEY,
     PARTICIPANT_MATCHES_TABLE,
     PIPELINE_DATASET_NAME,
-    PIPELINE_DESTINATION,
     PIPELINE_NAME,
     TOURNAMENT_PARTICIPANTS_PRIMARY_KEY,
     TOURNAMENT_PARTICIPANTS_TABLE,
@@ -26,6 +25,8 @@ from .constants import (
     TOURNAMENTS_TABLE,
 )
 from .http_client import get
+from .coverage import AUDIT_TABLE, build_audit, load_audits
+from .runtime import pipeline_options
 
 API_URL = "https://mew.limitlesstcg.com/labs/data/tcg"
 LABS_URL = "https://labs.limitlesstcg.com"
@@ -123,89 +124,122 @@ def deck_row(player, cards, tournament_id, url):
     }
 
 
+def extract_event(event, workers):
+    rows = {table: [] for table in TABLE_KEYS}
+    event_id = f"{event['id']:04d}"
+    url = f"{LABS_URL}/{event_id}/standings"
+    metadata = api("tournament", id=event_id, division="MA")
+    if not metadata.get("completed"):
+        raise ValueError(f"Masters division still in progress: {url}")
+    players = api("standings", tournamentId=event_id, division="MA")
+    if len(players) != metadata["players"]:
+        raise ValueError(f"Incomplete standings for {url}")
+    counts = Counter(p["name"] for p in players)
+    names_by_id = {
+        p["tp_id"]: p["name"]
+        if counts[p["name"]] == 1
+        else f"{p['name']} [Labs {p['tp_id']}]"
+        for p in players
+    }
+    players = [
+        dict(p, source_name=p["name"], name=names_by_id[p["tp_id"]]) for p in players
+    ]
+    winner = next(p["name"] for p in players if p["placement"] == 1)
+    rows[TOURNAMENTS_TABLE].append(
+        {
+            "tournament_page": url,
+            "data_date": datetime.strptime(
+                re.match(r"([A-Za-z]+ \d+)", event["date"])[1]
+                + ", "
+                + event["date"][-4:],
+                "%B %d, %Y",
+            )
+            .date()
+            .isoformat(),
+            "data_name": metadata.get("name")
+            or f"{event['type'].title()} Championship {event['city']}",
+            "data_organizer": "Play! Pokémon",
+            "data_format": "STANDARD",
+            "data_players": str(metadata["players"]),
+            "data_winner": winner,
+            "source": "limitless_labs",
+            "event_type": "in_person",
+            "division": "MA",
+            "completed": True,
+            "source_updated_at": metadata["updated_at"],
+        }
+    )
+    rows[TOURNAMENT_PARTICIPANTS_TABLE].extend(participant_row(p, url) for p in players)
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        pairings = executor.map(
+            lambda number: api(
+                "pairings", tournamentId=event_id, division="MA", round=number
+            ),
+            range(1, metadata["round"] + 1),
+        )
+        for number, pairs in enumerate(pairings, start=1):
+            rows[PARTICIPANT_MATCHES_TABLE].extend(
+                match_rows(pairs, number, url, names_by_id)
+            )
+
+        def fetch_deck(player):
+            cards = api(
+                "decklist", tournamentId=event_id, playerId=f"{player['tp_id']:04d}"
+            )
+            return deck_row(player, cards, event_id, url)
+
+        available = [p for p in players if p.get("decklist")]
+        for count, deck in enumerate(executor.map(fetch_deck, available), start=1):
+            rows[PARTICIPANT_DECK_TABLE].append(deck)
+            if count % 250 == 0:
+                print(f"{event_id}: {count}/{len(available)} decks", flush=True)
+    print(f"{event_id}: {len(players)} players, {len(available)} decks", flush=True)
+    return rows
+
+
 def extract_events(limit=3, workers=4):
     rows = {table: [] for table in TABLE_KEYS}
+    rows[AUDIT_TABLE] = []
     for event in latest_completed(api("tournaments"), limit):
-        event_id = f"{event['id']:04d}"
-        url = f"{LABS_URL}/{event_id}/standings"
-        metadata = api("tournament", id=event_id, division="MA")
-        if not metadata.get("completed"):
-            raise ValueError(f"Masters division still in progress: {url}")
-        players = api("standings", tournamentId=event_id, division="MA")
-        if len(players) != metadata["players"]:
-            raise ValueError(f"Incomplete standings for {url}")
-        counts = Counter(p["name"] for p in players)
-        names_by_id = {
-            p["tp_id"]: p["name"]
-            if counts[p["name"]] == 1
-            else f"{p['name']} [Labs {p['tp_id']}]"
-            for p in players
-        }
-        players = [
-            dict(p, source_name=p["name"], name=names_by_id[p["tp_id"]])
-            for p in players
-        ]
-        winner = next(p["name"] for p in players if p["placement"] == 1)
-        rows[TOURNAMENTS_TABLE].append(
-            {
-                "tournament_page": url,
-                "data_date": datetime.strptime(
-                    re.match(r"([A-Za-z]+ \d+)", event["date"])[1]
-                    + ", "
-                    + event["date"][-4:],
-                    "%B %d, %Y",
+        url = f"{LABS_URL}/{event['id']:04d}/standings"
+        try:
+            event_rows = extract_event(event, workers)
+        except Exception as exc:
+            print(f"Extraction failed for {url}: {exc}", flush=True)
+            rows[AUDIT_TABLE].append(
+                build_audit(
+                    {"tournament_page": url, "completed": True}, errors=["event"]
                 )
-                .date()
-                .isoformat(),
-                "data_name": metadata.get("name")
-                or f"{event['type'].title()} Championship {event['city']}",
-                "data_organizer": "Play! Pokémon",
-                "data_format": "STANDARD",
-                "data_players": str(metadata["players"]),
-                "data_winner": winner,
-                "source": "limitless_labs",
-                "event_type": "in_person",
-                "division": "MA",
-                "completed": True,
-                "source_updated_at": metadata["updated_at"],
-            }
-        )
-        rows[TOURNAMENT_PARTICIPANTS_TABLE].extend(
-            participant_row(p, url) for p in players
-        )
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            pairings = executor.map(
-                lambda number: api(
-                    "pairings", tournamentId=event_id, division="MA", round=number
-                ),
-                range(1, metadata["round"] + 1),
             )
-            for number, pairs in enumerate(pairings, start=1):
-                rows[PARTICIPANT_MATCHES_TABLE].extend(
-                    match_rows(pairs, number, url, names_by_id)
-                )
-
-            def fetch_deck(player):
-                cards = api(
-                    "decklist", tournamentId=event_id, playerId=f"{player['tp_id']:04d}"
-                )
-                return deck_row(player, cards, event_id, url)
-
-            available = [p for p in players if p.get("decklist")]
-            for count, deck in enumerate(executor.map(fetch_deck, available), start=1):
-                rows[PARTICIPANT_DECK_TABLE].append(deck)
-                if count % 250 == 0:
-                    print(f"{event_id}: {count}/{len(available)} decks", flush=True)
-        print(f"{event_id}: {len(players)} players, {len(available)} decks", flush=True)
+            continue
+        rows[AUDIT_TABLE].append(
+            build_audit(
+                event_rows[TOURNAMENTS_TABLE][0],
+                participants=event_rows[TOURNAMENT_PARTICIPANTS_TABLE],
+                decks=event_rows[PARTICIPANT_DECK_TABLE],
+                matches=event_rows[PARTICIPANT_MATCHES_TABLE],
+            )
+        )
+        for table in TABLE_KEYS:
+            rows[table].extend(event_rows[table])
     return rows
 
 
 def load_rows(rows):
     pipeline = dlt.pipeline(
         pipeline_name=PIPELINE_NAME,
-        destination=PIPELINE_DESTINATION,
+        **pipeline_options(),
         dataset_name=PIPELINE_DATASET_NAME,
     )
+    try:
+        load_data_rows(pipeline, rows)
+    except Exception:
+        load_audits(pipeline, rows.get(AUDIT_TABLE, []), load_status="failed")
+        raise
+    load_audits(pipeline, rows.get(AUDIT_TABLE, []), load_status="success")
+
+
+def load_data_rows(pipeline, rows):
     for table, key in TABLE_KEYS.items():
         if rows[table]:
             print(
@@ -220,60 +254,103 @@ def load_rows(rows):
                     else None,
                 )
             )
-    if not rows[PARTICIPANT_DECK_TABLE] and any(rows.values()):
-        # Keep dbt's sources available before any decklists are published.
-        # Schema synchronization creates empty tables, never placeholder rows.
-        schema = pipeline.default_schema
-        for table, parent, columns in (
+    if any(rows.values()) and (
+        not rows[PARTICIPANT_DECK_TABLE] or rows.get(AUDIT_TABLE)
+    ):
+        ensure_sources(pipeline, include_event_sources=bool(rows.get(AUDIT_TABLE)))
+
+
+def ensure_sources(pipeline, *, include_event_sources=False):
+    """Declare absent raw sources without inserting placeholder rows or altering existing schemas."""
+    if pipeline.default_schema_name is None:
+        # A first failed event has not loaded data to initialize dlt's schema yet.
+        pipeline.run([], table_name=TOURNAMENTS_TABLE)
+    schema = pipeline.default_schema
+    source_tables = [
+        (
+            PARTICIPANT_DECK_TABLE,
+            None,
+            {
+                "player": "text",
+                "tournament": "text",
+                "decklist_link": "text",
+                "_dlt_id": "text",
+                "_dlt_load_id": "text",
+            },
+        ),
+        (
+            f"{PARTICIPANT_DECK_TABLE}__decklist",
+            PARTICIPANT_DECK_TABLE,
+            {
+                "name": "text",
+                "code": "text",
+                "kind": "text",
+                "quantity": "bigint",
+                "_dlt_id": "text",
+                "_dlt_parent_id": "text",
+                "_dlt_root_id": "text",
+                "_dlt_list_idx": "bigint",
+            },
+        ),
+    ]
+    if include_event_sources:
+        event_columns = {
+            TOURNAMENTS_TABLE: (
+                "tournament_page",
+                "data_date",
+                "data_name",
+                "data_organizer",
+                "data_format",
+                "data_players",
+                "data_winner",
+                "source",
+                "event_type",
+            ),
+            TOURNAMENT_PARTICIPANTS_TABLE: (
+                "name",
+                "tournament_link",
+                "place",
+                "record",
+                "points",
+                "deck",
+            ),
+            PARTICIPANT_MATCHES_TABLE: ("tournament", "round", "p1", "p2", "result"),
+        }
+        source_tables.extend(
             (
-                PARTICIPANT_DECK_TABLE,
+                table,
                 None,
-                {
-                    "player": "text",
-                    "tournament": "text",
-                    "decklist_link": "text",
-                    "_dlt_id": "text",
-                    "_dlt_load_id": "text",
-                },
-            ),
-            (
-                f"{PARTICIPANT_DECK_TABLE}__decklist",
-                PARTICIPANT_DECK_TABLE,
-                {
-                    "name": "text",
-                    "code": "text",
-                    "kind": "text",
-                    "quantity": "bigint",
-                    "_dlt_id": "text",
-                    "_dlt_parent_id": "text",
-                    "_dlt_root_id": "text",
-                    "_dlt_list_idx": "bigint",
-                },
-            ),
-        ):
-            if table not in schema.tables:
-                table_schema = new_table(
-                    table,
-                    parent_table_name=parent,
-                    write_disposition=None if parent else "merge",
-                    columns=[
-                        {"name": name, "data_type": data_type}
-                        for name, data_type in columns.items()
-                    ],
-                )
-                for name, column in table_schema["columns"].items():
-                    if name.startswith("_dlt_"):
-                        column["nullable"] = False
-                    if name == "_dlt_id":
-                        column["unique"] = True
-                    elif name == "_dlt_root_id":
-                        column["root_key"] = True
-                    elif name == "_dlt_parent_id":
-                        column["foreign_key"] = True
-                    elif not parent and name in PARTICIPANT_DECK_PRIMARY_KEY:
-                        column.update(primary_key=True, nullable=False)
-                schema.update_table(table_schema)
-        pipeline.sync_schema()
+                {name: "text" for name in (*names, "_dlt_id", "_dlt_load_id")},
+            )
+            for table, names in event_columns.items()
+        )
+    for table, parent, columns in source_tables:
+        if table not in schema.tables:
+            key = TABLE_KEYS.get(table, [])
+            primary_keys = [key] if isinstance(key, str) else key
+            primary_keys = {name.lower() for name in primary_keys}
+            table_schema = new_table(
+                table,
+                parent_table_name=parent,
+                write_disposition=None if parent else "merge",
+                columns=[
+                    {"name": name, "data_type": data_type}
+                    for name, data_type in columns.items()
+                ],
+            )
+            for name, column in table_schema["columns"].items():
+                if name.startswith("_dlt_"):
+                    column["nullable"] = False
+                if name == "_dlt_id":
+                    column["unique"] = True
+                elif name == "_dlt_root_id":
+                    column["root_key"] = True
+                elif name == "_dlt_parent_id":
+                    column["foreign_key"] = True
+                elif not parent and name in primary_keys:
+                    column.update(primary_key=True, nullable=False)
+            schema.update_table(table_schema)
+    pipeline.sync_schema()
 
 
 def main():
@@ -303,6 +380,10 @@ def main():
         with gzip.open(args.snapshot, "wt", encoding="utf-8") as handle:
             json.dump(rows, handle, ensure_ascii=False)
     load_rows(rows)
+    if any(
+        audit["extraction_status"] != "success" for audit in rows.get(AUDIT_TABLE, [])
+    ):
+        raise SystemExit("Some events failed extraction; inspect ingestion_event_runs")
 
 
 if __name__ == "__main__":

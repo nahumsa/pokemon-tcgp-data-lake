@@ -763,3 +763,104 @@ matchup_results:
     participants_without_history:
       expr: _["participants_without_history"].sum()
       description: Imported entries with no own result records; zero observations is not zero performance.
+
+event_coverage:
+  table: mart_event_coverage
+  database: main_consumption
+  description: Event-level completeness, extraction failures, freshness, and source provenance. Rates are event-grain
+    dimensions; use the readiness CLI for configurable report checks. Missing audits are unknown, not zero.
+  dimensions:
+    tournament_id:
+      expr: _.tournament_id
+      description: Stable event identity; retain this grain when interpreting coverage rates.
+    tournament_url:
+      expr: _.tournament_url
+      description: Source event provenance URL.
+    tournament_name:
+      expr: _.tournament_name
+      description: Event name; unavailable after a first failed extraction.
+    tournament_date:
+      expr: _.tournament_date
+      description: Source local event date.
+    source:
+      expr: _.source
+      description: Tournament data provider.
+    event_type:
+      expr: _.event_type
+      description: Online or in-person setting.
+    format:
+      expr: _.format
+      description: Published format; current importers select TCG Standard.
+    source_completed:
+      expr: _.source_completed
+      description: Source event completion, independent of report readiness.
+    expected_participant_count:
+      expr: _.expected_participant_count
+      description: Source-reported participant count, null when unknown.
+    observed_participant_count:
+      expr: _.observed_participant_count
+      description: Distinct event entrants stored in the participant dimension.
+    classified_participant_count:
+      expr: _.classified_participant_count
+      description: Stored entrants with an unambiguous rule or source-label classification.
+    ambiguous_participant_count:
+      expr: _.ambiguous_participant_count
+      description: Stored entrants with ambiguous classification.
+    latest_participant_count:
+      expr: _.latest_participant_count
+      description: Entrants extracted in the latest audited attempt; null if not fetched.
+    latest_decklist_count:
+      expr: _.latest_decklist_count
+      description: Entrants with a nonempty list in the latest attempt.
+    latest_history_participant_count:
+      expr: _.latest_history_participant_count
+      description: Entrants with at least one imported result in the latest attempt; not complete-round coverage.
+    latest_extraction_status:
+      expr: _.latest_extraction_status
+      description: Success, incomplete, or failed for the latest audited attempt.
+    latest_load_status:
+      expr: _.latest_load_status
+      description: Whether all raw data loads in that attempt succeeded.
+    participant_error_count:
+      expr: _.participant_error_count
+      description: Latest participant extraction errors.
+    decklist_error_count:
+      expr: _.decklist_error_count
+      description: Latest decklist extraction errors.
+    history_error_count:
+      expr: _.history_error_count
+      description: Latest history extraction errors.
+    extraction_error_count:
+      expr: _.extraction_error_count
+      description: All latest extraction errors, including event-level failures.
+    source_updated_at:
+      expr: _.source_updated_at
+      description: Upstream metadata timestamp, not an ingestion timestamp.
+    extracted_at:
+      expr: _.extracted_at
+      description: Latest actual extraction time; snapshot replays preserve this timestamp.
+    latest_load_at:
+      expr: _.latest_load_at
+      description: Time the latest raw load attempt finished.
+    last_successful_ingestion_at:
+      expr: _.last_successful_ingestion_at
+      description: Latest successful extraction and raw load; earlier success stays visible after failure.
+    transformed_at:
+      expr: _.transformed_at
+      description: Start time of the dbt invocation that successfully built this coverage table.
+    participant_coverage_pct:
+      expr: _.participant_coverage_pct
+      description: Stored entrants / source-reported entrants * 100. Event grain only.
+    decklist_coverage_pct:
+      expr: _.decklist_coverage_pct
+      description: Latest nonempty lists / latest extracted entrants * 100. Event grain only.
+    history_coverage_pct:
+      expr: _.history_coverage_pct
+      description: Latest entrants with a result / latest extracted entrants * 100. Event grain only.
+    classification_coverage_pct:
+      expr: _.classification_coverage_pct
+      description: Unambiguously classified stored entrants / stored entrants * 100. Event grain only.
+  measures:
+    event_count:
+      expr: _.count()
+      description: Number of events, including failed audited events.

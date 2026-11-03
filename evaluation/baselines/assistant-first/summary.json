@@ -1,0 +1,97 @@
+{
+  "candidate": "ChatGPT Work assistant",
+  "fixture_sha256": "ea1b57d2d6496c9dee4de729fd3e817fd5fec5d53b191a42442d0a82d6122ade",
+  "passed": 12,
+  "total": 12,
+  "results": [
+    {
+      "id": "entries",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 3,
+      "tool_errors": 0
+    },
+    {
+      "id": "online_entries",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "unique_matches",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "ties",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "pooled_rate",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "meta_share",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 3,
+      "tool_errors": 0
+    },
+    {
+      "id": "printings",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "missing_results",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "classification",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "association",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 3,
+      "tool_errors": 0
+    },
+    {
+      "id": "future",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "source_scope",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    }
+  ],
+  "scope": "Controlled synthetic benchmark; arithmetic and declared caveats are scored. Free-text explanation still needs review.",
+  "run_type": "guided_self_evaluation",
+  "blind": false,
+  "caveats": "The same assistant authored the fixture and answered. Shared context and caveat labels were available. This is not a general model accuracy estimate.",
+  "source_base": "2538b625569a3cffc2cd64e0aa8e3f26f58cad81"
+}

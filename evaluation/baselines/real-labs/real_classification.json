@@ -1,0 +1,166 @@
+{
+  "id": "real_classification",
+  "question": "How many imported entries have no published decklist or source archetype label? Are they still included in the overall population?",
+  "calls": [
+    {
+      "tool": "get_model",
+      "arguments": {
+        "model_name": "deck_classification"
+      },
+      "result": {
+        "name": "deck_classification",
+        "dimensions": {
+          "participant_id": {
+            "description": "Event-specific participant key; join dim_participants for event provenance.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "archetype": {
+            "description": "Selected parent archetype, null if unclassified.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "sub_archetype": {
+            "description": "Selected variant or provider label, null if unclassified.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "classification_status": {
+            "description": "matched, ambiguous, unmatched, missing_decklist, or source_label_mapped/unmapped/ambiguous.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "classification_method": {
+            "description": "card_rules, source_label_mapped, source_label_unmapped, or unclassified.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "source_archetype_label": {
+            "description": "Original Labs label, independent of card-list availability.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "selected_rule_id": {
+            "description": "Stable winning card-rule ID; null when a provider label wins or no rule matches.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "matched_rule_ids": {
+            "description": "Sorted comma-separated IDs of all matching card rules, including lower precedence rules.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "top_rule_ids": {
+            "description": "Sorted IDs tied at the highest specificity and priority, before the stable ID tie-breaker.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "matched_rule_count": {
+            "description": "Number of matching card rules, including lower precedence rules.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "top_candidate_count": {
+            "description": "Distinct archetype/variant pairs among highest precedence card rules; greater than one signals ambiguity.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "ruleset_version": {
+            "description": "Algorithm version and content fingerprint of the complete classification seed.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          }
+        },
+        "measures": {
+          "participants": {
+            "description": "Imported participants, including unclassified entrants; filter by classification_status for coverage."
+          }
+        },
+        "calculated_measures": []
+      },
+      "is_error": false
+    },
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "deck_classification",
+        "dimensions": [
+          "classification_status"
+        ],
+        "measures": [
+          "participants"
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 3,
+        "columns": [
+          "classification_status",
+          "participants"
+        ],
+        "records": [
+          {
+            "classification_status": "source_label_unmapped",
+            "participants": 1022
+          },
+          {
+            "classification_status": "source_label_mapped",
+            "participants": 1200
+          },
+          {
+            "classification_status": "missing_decklist",
+            "participants": 1751
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "candidate_input": {
+    "event": "question",
+    "id": "real_classification",
+    "question": "How many imported entries have no published decklist or source archetype label? Are they still included in the overall population?",
+    "instructions": "Answer by choosing and calling the available MCP tools. Do not access local files, oracle answers, or external sources. Return a factual explanation grounded in tool results. Percentages use 0-100. Report missing values as null.",
+    "answer_schema": {
+      "action": "answer",
+      "facts": [
+        "missing_entries"
+      ],
+      "explanation": "Your reasoning and conclusion",
+      "caveats": [
+        "classification_coverage",
+        "entries_still_in_population"
+      ]
+    },
+    "protocol": {
+      "tool_call": {
+        "action": "call",
+        "tool": "tool_name",
+        "arguments": {}
+      },
+      "final": {
+        "action": "answer",
+        "facts": {},
+        "explanation": "...",
+        "caveats": []
+      }
+    },
+    "tools_reference": "tools.json"
+  },
+  "answer": {
+    "facts": {
+      "missing_entries": 1751
+    },
+    "explanation": "The classification diagnostics show 1,751 missing_decklist entries. The remaining 2,222 have source labels, including 1,022 labels not mapped by the seed. The diagnostic population totals 3,973, so missing decklists do not remove entrants from the overall population. Analyses restricted to classified entries cover a different population.",
+    "caveats": [
+      "classification_coverage",
+      "entries_still_in_population"
+    ]
+  },
+  "seconds": 15.559,
+  "candidate": "ChatGPT Work assistant / real-data self-evaluation",
+  "fixture_sha256": "ffc9fa0ff8e5fb60a6468a9ec372ed240e9b9d6746edde5edf5eaa940e11700a",
+  "timestamp": "2026-11-02T16:02:53.032164+00:00",
+  "run_type": "real_data_guided_self_evaluation",
+  "blind": false
+}

@@ -185,7 +185,7 @@ def test_zero_samples_return_null_rates_and_intervals(semantic):
 
 
 def test_minimum_sample_filter_applies_to_pooled_groups(semantic):
-    from semantic_layer.semantic_layer.matchups import query_matchup_evidence
+    from semantic_layer.matchups import query_matchup_evidence
 
     output = query_matchup_evidence(semantic, min_sample_size=10)
     assert sorted(row["sample_size"] for row in output["rows"]) == [10, 90]
@@ -194,14 +194,14 @@ def test_minimum_sample_filter_applies_to_pooled_groups(semantic):
 
 @pytest.mark.parametrize("minimum", [0, -1, 1.5, True])
 def test_sample_filter_rejects_invalid_thresholds(semantic, minimum):
-    from semantic_layer.semantic_layer.matchups import query_matchup_evidence
+    from semantic_layer.matchups import query_matchup_evidence
 
     with pytest.raises(ValueError, match="positive integer"):
         query_matchup_evidence(semantic, min_sample_size=minimum)
 
 
 def test_sample_filter_does_not_mix_formats_or_apply_limit_before_threshold(semantic):
-    from semantic_layer.semantic_layer.matchups import query_matchup_evidence
+    from semantic_layer.matchups import query_matchup_evidence
 
     output = query_matchup_evidence(semantic, min_sample_size=10, limit=1)
     assert output["qualifying_groups"] == 2
@@ -216,7 +216,7 @@ def test_sample_filter_does_not_mix_formats_or_apply_limit_before_threshold(sema
 
 
 def test_mcp_tool_exposes_post_pool_sample_filter(semantic):
-    from semantic_layer.semantic_layer.matchups import register_matchup_tools
+    from semantic_layer.matchups import register_matchup_tools
 
     server = MCPSemanticModel(models={"matchup_evidence": semantic})
     register_matchup_tools(server, {"matchup_evidence": semantic})
@@ -232,7 +232,7 @@ def test_mcp_tool_exposes_post_pool_sample_filter(semantic):
 
 
 def test_sample_measure_cannot_be_misused_as_a_pre_pool_filter(semantic):
-    from semantic_layer.semantic_layer.matchups import query_matchup_evidence
+    from semantic_layer.matchups import query_matchup_evidence
 
     with pytest.raises(ValueError, match="dimension"):
         query_matchup_evidence(

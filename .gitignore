@@ -173,3 +173,11 @@ cython_debug/
 
 # Locally generated Limitless Labs snapshots
 /data/limitless_labs/
+
+# Generated databases and per-worktree runtime state
+.data/
+*.duckdb
+*.duckdb.wal
+.dlt/pipelines/
+pytest-of-root/
+/evaluation-results/

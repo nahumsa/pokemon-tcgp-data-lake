@@ -1,6 +1,6 @@
 import argparse
 import warnings
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Optional
 
@@ -13,9 +13,6 @@ from .constants import (
     PARTICIPANT_DECK_TABLE,
     PARTICIPANT_MATCHES_PRIMARY_KEY,
     PARTICIPANT_MATCHES_TABLE,
-    PIPELINE_DATASET_NAME,
-    PIPELINE_DESTINATION,
-    PIPELINE_NAME,
     TOURNAMENT_PARTICIPANTS_PRIMARY_KEY,
     TOURNAMENT_PARTICIPANTS_TABLE,
     TOURNAMENTS_PRIMARY_KEY,
@@ -28,6 +25,7 @@ from .extractors import (
     get_deck,
 )
 from .http_client import get
+from .coverage import AUDIT_TABLE, build_audit
 from .payload import (
     FormatEnum,
     GameEnum,
@@ -83,6 +81,7 @@ def iter_tournaments(
         tournaments_list = extract_tournaments(response)
         for tournament in tournaments_list:
             tournament.event_type = tournament_params.type.value
+            tournament.completed = True
 
         if not tournaments_list:
             print("No tournaments found on this page.")
@@ -203,6 +202,68 @@ def matches(participants: dlt.sources.DltResource):
             )
 
 
+def collect_rows(tournament_rows, workers=DETAIL_FETCH_WORKERS):
+    from .labs import TABLE_KEYS
+
+    rows = {table: [] for table in TABLE_KEYS}
+    rows[AUDIT_TABLE] = []
+    for tournament in tournament_rows:
+        event = tournament.model_dump()
+        rows[TOURNAMENTS_TABLE].append(event)
+        errors = []
+        try:
+            entrants = extract_participants(tournament.tournament_page)
+        except Exception as exc:
+            print(
+                f"Participant extraction failed for {tournament.tournament_page}: {exc}",
+                flush=True,
+            )
+            rows[AUDIT_TABLE].append(build_audit(event, errors=["participants"]))
+            continue
+        participants = [p.model_dump() for p in entrants]
+        decks, matches = [], []
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            for deck, history, failures in executor.map(
+                fetch_participant_details, entrants
+            ):
+                if deck:
+                    decks.append(deck)
+                matches.extend(history)
+                errors.extend(failures)
+        rows[TOURNAMENT_PARTICIPANTS_TABLE].extend(participants)
+        rows[PARTICIPANT_DECK_TABLE].extend(decks)
+        rows[PARTICIPANT_MATCHES_TABLE].extend(matches)
+        rows[AUDIT_TABLE].append(
+            build_audit(
+                event,
+                participants=participants,
+                decks=decks,
+                matches=matches,
+                errors=errors,
+            )
+        )
+    return rows
+
+
+def fetch_participant_details(participant):
+    deck_row, history, errors = None, [], []
+    try:
+        deck = get_deck(participant)
+        if deck:
+            deck_row = deck.model_dump()
+    except Exception as exc:
+        print(f"Deck extraction failed for {participant.name}: {exc}", flush=True)
+        errors.append("decks")
+    try:
+        history = [
+            match.model_dump(by_alias=True) for match in extract_matches(participant)
+        ]
+    except Exception as exc:
+        print(f"History extraction failed for {participant.name}: {exc}", flush=True)
+        errors.append("matches")
+    return deck_row, history, errors
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ingest Pokemon TCG data.")
     parser.add_argument(
@@ -219,20 +280,14 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    time_param = TimeEnum.ALL
-
-    pipeline = dlt.pipeline(
-        pipeline_name=PIPELINE_NAME,
-        destination=PIPELINE_DESTINATION,
-        dataset_name=PIPELINE_DATASET_NAME,
-    )
+    from .labs import load_rows
 
     payload = TournamentPayload(
         game=GameEnum.TCG,
         format=FormatEnum.STANDARD,
         platform=PlatformEnum.ALL,
         type=TypeEnum.ONLINE,
-        time=time_param,
+        time=TimeEnum.ALL,
     )
     tournament_rows = [
         tournament
@@ -241,104 +296,7 @@ if __name__ == "__main__":
         )
         for tournament in batch
     ]
-    print(f"Loaded {len(tournament_rows)} tournaments from scraper.", flush=True)
-
-    participant_rows = []
-    for tournament in tournament_rows:
-        try:
-            participant_rows.extend(extract_participants(tournament.tournament_page))
-        except Exception as exc:
-            print(
-                f"Tournament {tournament.tournament_page!r} generated an exception during participant extraction: {exc}"
-            )
-    print(f"Loaded {len(participant_rows)} participants from scraper.", flush=True)
-
-    def fetch_participant_details(participant):
-        deck_row = None
-        participant_matches = []
-        errors = []
-
-        try:
-            deck = get_deck(participant)
-            if deck:
-                deck_row = deck.model_dump()
-        except Exception as exc:
-            errors.append(
-                f"Participant {participant.name!r} generated an exception during decklist extraction: {exc}"
-            )
-
-        try:
-            participant_matches = [
-                match.model_dump(by_alias=True)
-                for match in extract_matches(participant)
-            ]
-        except Exception as exc:
-            errors.append(
-                f"Participant {participant.name!r} generated an exception during matches extraction: {exc}"
-            )
-
-        return deck_row, participant_matches, errors
-
-    deck_rows = []
-    match_rows = []
-    with ThreadPoolExecutor(max_workers=DETAIL_FETCH_WORKERS) as executor:
-        futures = [
-            executor.submit(fetch_participant_details, participant)
-            for participant in participant_rows
-        ]
-        for completed, future in enumerate(as_completed(futures), start=1):
-            deck_row, participant_matches, errors = future.result()
-            if deck_row:
-                deck_rows.append(deck_row)
-            match_rows.extend(participant_matches)
-            for error in errors:
-                print(error, flush=True)
-            if completed % 500 == 0 or completed == len(futures):
-                print(
-                    f"Fetched details for {completed}/{len(futures)} participants.",
-                    flush=True,
-                )
-    print(
-        f"Loaded {len(deck_rows)} decks and {len(match_rows)} matches from scraper.",
-        flush=True,
-    )
-
-    if tournament_rows:
-        load_info = pipeline.run(
-            [tournament.model_dump() for tournament in tournament_rows],
-            table_name=TOURNAMENTS_TABLE,
-            write_disposition="merge",
-            primary_key=TOURNAMENTS_PRIMARY_KEY,
-            loader_file_format="jsonl",
-        )
-        print(load_info)
-
-    if participant_rows:
-        load_info = pipeline.run(
-            [participant.model_dump() for participant in participant_rows],
-            table_name=TOURNAMENT_PARTICIPANTS_TABLE,
-            write_disposition="merge",
-            primary_key=TOURNAMENT_PARTICIPANTS_PRIMARY_KEY,
-            loader_file_format="jsonl",
-        )
-        print(load_info)
-
-    if deck_rows:
-        load_info = pipeline.run(
-            deck_rows,
-            table_name=PARTICIPANT_DECK_TABLE,
-            write_disposition="merge",
-            primary_key=PARTICIPANT_DECK_PRIMARY_KEY,
-            loader_file_format="jsonl",
-        )
-        print(load_info)
-
-    if match_rows:
-        load_info = pipeline.run(
-            match_rows,
-            table_name=PARTICIPANT_MATCHES_TABLE,
-            write_disposition="merge",
-            primary_key=PARTICIPANT_MATCHES_PRIMARY_KEY,
-            loader_file_format="jsonl",
-        )
-        print(load_info)
+    rows = collect_rows(tournament_rows)
+    load_rows(rows)
+    if any(audit["extraction_status"] != "success" for audit in rows[AUDIT_TABLE]):
+        raise SystemExit("Some events failed extraction; inspect ingestion_event_runs")
