@@ -51,3 +51,13 @@ component's `AGENTS.md` before editing it.
 - Handoff: describe the behavior changed, branch/PR, exact checks and results,
   validation limitations, and any required migration/rebuild. Distinguish mocked
   unit tests, data tests, preflight checks, and manual real-data validation.
+
+## MCP analytical evaluation
+
+Use `evaluation/README.md` to evaluate the complete question-to-answer workflow.
+Run the real MCP server, retain the candidate's actual tool calls and final
+answer, and compare facts with independent raw-source reference queries on a
+frozen real snapshot (or the oracle for explicitly synthetic tests). Do not label
+archived-answer replay or harness tests as a fresh agent evaluation. Report the
+candidate identity, dataset fingerprint, per-question failures, and whether the
+run was guided or blinded. Review explanations for unsupported interpretations.

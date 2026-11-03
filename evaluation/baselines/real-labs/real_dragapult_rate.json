@@ -1,0 +1,166 @@
+{
+  "id": "real_dragapult_rate",
+  "question": "What is the pooled recorded-result win rate of classified Dragapult entries? Report wins, results, and percentage; preserve ties in the denominator.",
+  "calls": [
+    {
+      "tool": "get_model",
+      "arguments": {
+        "model_name": "archetype_stats"
+      },
+      "result": {
+        "name": "archetype_stats",
+        "dimensions": {
+          "set_name": {
+            "description": "The card set or meta period.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "archetype": {
+            "description": "Primary deck archetype.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "sub_archetype": {
+            "description": "Specific variant of the archetype.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "source": {
+            "description": "Tournament data provider.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "event_type": {
+            "description": "Tournament setting: online, in_person, or unknown.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          }
+        },
+        "measures": {
+          "total_matches": {
+            "description": "Total number of matches played by this archetype."
+          },
+          "total_wins": {
+            "description": "Total wins."
+          },
+          "total_losses": {
+            "description": "Total losses."
+          },
+          "total_ties": {
+            "description": "Total ties."
+          },
+          "avg_win_rate": {
+            "description": "Pooled wins / recorded player-results, as a percentage (0-100); ties stay in the denominator. Null with no results."
+          }
+        },
+        "calculated_measures": []
+      },
+      "is_error": false
+    },
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "archetype_stats",
+        "dimensions": [
+          "archetype",
+          "set_name",
+          "source",
+          "event_type"
+        ],
+        "measures": [
+          "total_wins",
+          "total_matches",
+          "total_ties",
+          "avg_win_rate"
+        ],
+        "filters": [
+          {
+            "field": "archetype",
+            "operator": "=",
+            "value": "Dragapult"
+          }
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 1,
+        "columns": [
+          "archetype",
+          "set_name",
+          "source",
+          "event_type",
+          "total_wins",
+          "total_matches",
+          "total_ties",
+          "avg_win_rate"
+        ],
+        "records": [
+          {
+            "archetype": "Dragapult",
+            "set_name": "30th Celebration",
+            "source": "limitless_labs",
+            "event_type": "in_person",
+            "total_wins": 2285.0,
+            "total_matches": 5507,
+            "total_ties": 1048.0,
+            "avg_win_rate": 41.4926457236
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "candidate_input": {
+    "event": "question",
+    "id": "real_dragapult_rate",
+    "question": "What is the pooled recorded-result win rate of classified Dragapult entries? Report wins, results, and percentage; preserve ties in the denominator.",
+    "instructions": "Answer by choosing and calling the available MCP tools. Do not access local files, oracle answers, or external sources. Return a factual explanation grounded in tool results. Percentages use 0-100. Report missing values as null.",
+    "answer_schema": {
+      "action": "answer",
+      "facts": [
+        "wins",
+        "results",
+        "win_rate"
+      ],
+      "explanation": "Your reasoning and conclusion",
+      "caveats": [
+        "ratio_of_counts",
+        "ties_in_denominator",
+        "classification_coverage"
+      ]
+    },
+    "protocol": {
+      "tool_call": {
+        "action": "call",
+        "tool": "tool_name",
+        "arguments": {}
+      },
+      "final": {
+        "action": "answer",
+        "facts": {},
+        "explanation": "...",
+        "caveats": []
+      }
+    },
+    "tools_reference": "tools.json"
+  },
+  "answer": {
+    "facts": {
+      "wins": 2285,
+      "results": 5507,
+      "win_rate": 41.4926457236
+    },
+    "explanation": "Classified Dragapult entries have 2,285 wins across 5,507 recorded results, giving a pooled win-only rate of 41.49%. Its 1,048 ties remain in the denominator. The returned scope is Limitless Labs in-person events in the 30th Celebration period. This covers known classified entries, not the missing-deck population, and seed-unmapped variants may be separate categories.",
+    "caveats": [
+      "ratio_of_counts",
+      "ties_in_denominator",
+      "classification_coverage"
+    ]
+  },
+  "seconds": 14.203,
+  "candidate": "ChatGPT Work assistant / real-data self-evaluation",
+  "fixture_sha256": "ffc9fa0ff8e5fb60a6468a9ec372ed240e9b9d6746edde5edf5eaa940e11700a",
+  "timestamp": "2026-11-02T16:03:33.309688+00:00",
+  "run_type": "real_data_guided_self_evaluation",
+  "blind": false
+}

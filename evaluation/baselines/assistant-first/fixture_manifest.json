@@ -1,0 +1,6 @@
+{
+  "fixture_version": 1,
+  "sha256": "ea1b57d2d6496c9dee4de729fd3e817fd5fec5d53b191a42442d0a82d6122ade",
+  "database": "benchmark.duckdb (not committed; rebuild from evaluation.fixture)",
+  "synthetic": true
+}

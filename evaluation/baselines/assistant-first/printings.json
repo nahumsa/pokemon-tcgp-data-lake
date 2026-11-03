@@ -1,0 +1,148 @@
+{
+  "id": "printings",
+  "question": "Across online events, how many published classified decks contain Dragapult ex, and how many copies are recorded? Combine alternate printings for deck counts.",
+  "calls": [
+    {
+      "tool": "get_model",
+      "arguments": {
+        "model_name": "cards_used"
+      },
+      "result": {
+        "name": "cards_used",
+        "dimensions": {
+          "set_name": {
+            "description": "The set or meta period.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "card_name": {
+            "description": "Name of the card.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "card_code": {
+            "description": "Set code and number of the card.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "card_kind": {
+            "description": "Type of card: pokemon, trainer, or energy.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "source": {
+            "description": "Tournament data provider.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "event_type": {
+            "description": "Tournament setting: online, in_person, or unknown.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          }
+        },
+        "measures": {
+          "total_used": {
+            "description": "Total copies of this card across all decks."
+          },
+          "decks_containing": {
+            "description": "Number of decks containing at least one copy of this card."
+          }
+        },
+        "calculated_measures": []
+      },
+      "is_error": false
+    },
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "cards_used",
+        "dimensions": [
+          "card_name"
+        ],
+        "measures": [
+          "decks_containing",
+          "total_used"
+        ],
+        "filters": [
+          {
+            "field": "event_type",
+            "operator": "=",
+            "value": "online"
+          },
+          {
+            "field": "card_name",
+            "operator": "=",
+            "value": "Dragapult ex"
+          }
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 1,
+        "columns": [
+          "card_name",
+          "decks_containing",
+          "total_used"
+        ],
+        "records": [
+          {
+            "card_name": "Dragapult ex",
+            "decks_containing": 3,
+            "total_used": 12.0
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "answer": {
+    "facts": {
+      "decks": 3,
+      "copies": 12
+    },
+    "explanation": "Grouping by functional card name across online events gives 3 distinct deck entries containing Dragapult ex and 12 copies. The distinct deck measure avoids counting an entry twice when it includes alternate printings. This population covers published classified decks, not every entrant.",
+    "caveats": [
+      "functional_card_deduplication",
+      "published_classified_only"
+    ]
+  },
+  "seconds": 13.996,
+  "candidate": "ChatGPT Work assistant",
+  "fixture_sha256": "ea1b57d2d6496c9dee4de729fd3e817fd5fec5d53b191a42442d0a82d6122ade",
+  "timestamp": "2026-11-02T03:03:47.687014+00:00",
+  "candidate_input": {
+    "event": "question",
+    "id": "printings",
+    "question": "Across online events, how many published classified decks contain Dragapult ex, and how many copies are recorded? Combine alternate printings for deck counts.",
+    "instructions": "Answer by choosing and calling the available MCP tools. Do not access local files, oracle answers, or external sources. Return a factual explanation grounded in tool results. Percentages use 0-100. Report missing values as null.",
+    "answer_schema": {
+      "action": "answer",
+      "facts": [
+        "decks",
+        "copies"
+      ],
+      "explanation": "Your reasoning and conclusion",
+      "caveats": [
+        "functional_card_deduplication",
+        "published_classified_only"
+      ]
+    },
+    "protocol": {
+      "tool_call": {
+        "action": "call",
+        "tool": "tool_name",
+        "arguments": {}
+      },
+      "final": {
+        "action": "answer",
+        "facts": {},
+        "explanation": "...",
+        "caveats": []
+      }
+    },
+    "tools_reference": "tools.json"
+  },
+  "run_type": "guided_self_evaluation",
+  "blind": false
+}

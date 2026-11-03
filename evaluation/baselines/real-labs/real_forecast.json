@@ -1,0 +1,92 @@
+{
+  "id": "real_forecast",
+  "question": "Can this snapshot determine the winning archetype of the next tournament?",
+  "calls": [
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "tournament_analysis",
+        "dimensions": [
+          "tournament_name",
+          "tournament_date"
+        ],
+        "measures": [
+          "player_count"
+        ],
+        "order_by": [
+          [
+            "tournament_date",
+            "desc"
+          ]
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 2,
+        "columns": [
+          "tournament_name",
+          "tournament_date",
+          "player_count"
+        ],
+        "records": [
+          {
+            "tournament_name": "Regional Championship Gdańsk",
+            "tournament_date": "2026-10-31T00:00:00.000",
+            "player_count": 1739
+          },
+          {
+            "tournament_name": "Regional Championship Puebla",
+            "tournament_date": "2026-10-24T00:00:00.000",
+            "player_count": 2234
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "candidate_input": {
+    "event": "question",
+    "id": "real_forecast",
+    "question": "Can this snapshot determine the winning archetype of the next tournament?",
+    "instructions": "Answer by choosing and calling the available MCP tools. Do not access local files, oracle answers, or external sources. Return a factual explanation grounded in tool results. Percentages use 0-100. Report missing values as null.",
+    "answer_schema": {
+      "action": "answer",
+      "facts": [
+        "answerable"
+      ],
+      "explanation": "Your reasoning and conclusion",
+      "caveats": [
+        "future_outcome_not_observed"
+      ]
+    },
+    "protocol": {
+      "tool_call": {
+        "action": "call",
+        "tool": "tool_name",
+        "arguments": {}
+      },
+      "final": {
+        "action": "answer",
+        "facts": {},
+        "explanation": "...",
+        "caveats": []
+      }
+    },
+    "tools_reference": "tools.json"
+  },
+  "answer": {
+    "facts": {
+      "answerable": false
+    },
+    "explanation": "The returned tournaments are historical Gdańsk and Puebla events starting October 31 and October 24, 2026. Those observations cannot determine the next tournament winner. Missing deck coverage further limits extrapolation, and no validated predictive evaluation is exposed by these tools.",
+    "caveats": [
+      "future_outcome_not_observed"
+    ]
+  },
+  "seconds": 11.928,
+  "candidate": "ChatGPT Work assistant / real-data self-evaluation",
+  "fixture_sha256": "ffc9fa0ff8e5fb60a6468a9ec372ed240e9b9d6746edde5edf5eaa940e11700a",
+  "timestamp": "2026-11-02T16:04:53.031393+00:00",
+  "run_type": "real_data_guided_self_evaluation",
+  "blind": false
+}

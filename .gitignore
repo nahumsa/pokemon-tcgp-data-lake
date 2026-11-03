@@ -180,3 +180,4 @@ cython_debug/
 *.duckdb.wal
 .dlt/pipelines/
 pytest-of-root/
+/evaluation-results/

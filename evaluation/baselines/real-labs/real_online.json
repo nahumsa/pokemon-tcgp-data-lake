@@ -1,0 +1,81 @@
+{
+  "id": "real_online",
+  "question": "How many imported entries in this snapshot belong to online events? Do not mistake absence of online records for poor online performance.",
+  "calls": [
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "monthly_populations",
+        "dimensions": [
+          "event_type",
+          "source"
+        ],
+        "measures": [
+          "total_participants"
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 1,
+        "columns": [
+          "event_type",
+          "source",
+          "total_participants"
+        ],
+        "records": [
+          {
+            "event_type": "in_person",
+            "source": "limitless_labs",
+            "total_participants": 3973
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "candidate_input": {
+    "event": "question",
+    "id": "real_online",
+    "question": "How many imported entries in this snapshot belong to online events? Do not mistake absence of online records for poor online performance.",
+    "instructions": "Answer by choosing and calling the available MCP tools. Do not access local files, oracle answers, or external sources. Return a factual explanation grounded in tool results. Percentages use 0-100. Report missing values as null.",
+    "answer_schema": {
+      "action": "answer",
+      "facts": [
+        "entries"
+      ],
+      "explanation": "Your reasoning and conclusion",
+      "caveats": [
+        "snapshot_scope_only"
+      ]
+    },
+    "protocol": {
+      "tool_call": {
+        "action": "call",
+        "tool": "tool_name",
+        "arguments": {}
+      },
+      "final": {
+        "action": "answer",
+        "facts": {},
+        "explanation": "...",
+        "caveats": []
+      }
+    },
+    "tools_reference": "tools.json"
+  },
+  "answer": {
+    "facts": {
+      "entries": 0
+    },
+    "explanation": "The complete population grouping contains only in_person/limitless_labs, with 3,973 entries. There are therefore zero imported online entries in this snapshot. This describes the selected dataset only and says nothing about online deck performance.",
+    "caveats": [
+      "snapshot_scope_only"
+    ]
+  },
+  "seconds": 21.893,
+  "candidate": "ChatGPT Work assistant / real-data self-evaluation",
+  "fixture_sha256": "ffc9fa0ff8e5fb60a6468a9ec372ed240e9b9d6746edde5edf5eaa940e11700a",
+  "timestamp": "2026-11-02T16:04:41.102463+00:00",
+  "run_type": "real_data_guided_self_evaluation",
+  "blind": false
+}

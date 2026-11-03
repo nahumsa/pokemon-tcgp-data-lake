@@ -270,3 +270,15 @@ database. No data fetch or MCP startup is performed by CI.
 
 ---
 
+
+## Evaluate an agent through MCP
+
+The [MCP analytics benchmark](evaluation/README.md) runs question-to-answer
+assessments through the stdio server and retains actual queries and answers.
+The [real-data comparison](evaluation/baselines/real-labs/README.md) uses 3,973
+entries and 33,027 result records from Gdańsk and Puebla. All 11 quantitative
+answers matched independent raw-API reference SQL, and a future-winner question
+was correctly declined. The [synthetic baseline](evaluation/baselines/assistant-first/report.md)
+is retained as a separate controlled test. Both completed runs were guided,
+non-blinded assistant self-evaluations; neither is a general model accuracy estimate.
+CI checks the transport, references and archived answers, not a new model run.

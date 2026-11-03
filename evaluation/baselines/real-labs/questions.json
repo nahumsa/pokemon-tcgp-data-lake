@@ -1,0 +1,144 @@
+[
+  {
+    "id": "real_entries",
+    "question": "How many imported tournament entries are in this real-data snapshot? Distinguish entries from lifetime people.",
+    "facts": [
+      "entries"
+    ],
+    "required_caveats": [
+      "entries_not_people"
+    ]
+  },
+  {
+    "id": "real_records",
+    "question": "How many player-result records exist across the snapshot? These are not unique physical matches.",
+    "facts": [
+      "player_records"
+    ],
+    "required_caveats": [
+      "perspectives_not_pairings"
+    ]
+  },
+  {
+    "id": "real_latest_matches",
+    "question": "For Regional Championship Gdańsk, report observed unique played pairings and player-result records.",
+    "facts": [
+      "played_pairings",
+      "player_records"
+    ],
+    "required_caveats": [
+      "observed_not_complete",
+      "perspectives_not_pairings"
+    ]
+  },
+  {
+    "id": "real_byes",
+    "question": "How many bye records are represented across the snapshot? Do not count them as played pairings.",
+    "facts": [
+      "byes"
+    ],
+    "required_caveats": [
+      "byes_not_played"
+    ]
+  },
+  {
+    "id": "real_classification",
+    "question": "How many imported entries have no published decklist or source archetype label? Are they still included in the overall population?",
+    "facts": [
+      "missing_entries"
+    ],
+    "required_caveats": [
+      "classification_coverage",
+      "entries_still_in_population"
+    ]
+  },
+  {
+    "id": "real_dragapult_share",
+    "question": "Across these imported events, what share of all entries are classified as Dragapult? Include every entrant in the population and disclose classification coverage.",
+    "facts": [
+      "archetype_entries",
+      "all_entries",
+      "meta_share"
+    ],
+    "required_caveats": [
+      "unclassified_in_denominator",
+      "classification_coverage"
+    ]
+  },
+  {
+    "id": "real_dragapult_rate",
+    "question": "What is the pooled recorded-result win rate of classified Dragapult entries? Report wins, results, and percentage; preserve ties in the denominator.",
+    "facts": [
+      "wins",
+      "results",
+      "win_rate"
+    ],
+    "required_caveats": [
+      "ratio_of_counts",
+      "ties_in_denominator",
+      "classification_coverage"
+    ]
+  },
+  {
+    "id": "real_card",
+    "question": "How many published classified decks contain Dreepy, and how many copies are recorded? Combine printings for deck counts.",
+    "facts": [
+      "decks",
+      "copies"
+    ],
+    "required_caveats": [
+      "functional_card_deduplication",
+      "published_classified_only"
+    ]
+  },
+  {
+    "id": "real_player",
+    "question": "For Aarni Karjala at Regional Championship Gdańsk, report recorded wins, ties, result count, and win-only percentage.",
+    "facts": [
+      "wins",
+      "ties",
+      "results",
+      "win_rate"
+    ],
+    "required_caveats": [
+      "ties_in_denominator"
+    ]
+  },
+  {
+    "id": "real_association",
+    "question": "For Dusknoir in Dragapult mirror comparisons in this snapshot, report with-card/without-card counts and win rates, percentage-point difference, evidence status, and whether the comparison proves a causal effect.",
+    "facts": [
+      "with_results",
+      "without_results",
+      "with_rate",
+      "without_rate",
+      "difference_pp",
+      "evidence_status",
+      "causal"
+    ],
+    "required_caveats": [
+      "observational_not_causal",
+      "sample_thresholds_not_significance"
+    ]
+  },
+  {
+    "id": "real_online",
+    "question": "How many imported entries in this snapshot belong to online events? Do not mistake absence of online records for poor online performance.",
+    "facts": [
+      "entries"
+    ],
+    "required_caveats": [
+      "snapshot_scope_only"
+    ]
+  },
+  {
+    "id": "real_forecast",
+    "question": "Can this snapshot determine the winning archetype of the next tournament?",
+    "facts": [
+      "answerable"
+    ],
+    "required_caveats": [
+      "future_outcome_not_observed"
+    ]
+  }
+]

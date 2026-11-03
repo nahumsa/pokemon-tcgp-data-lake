@@ -1,0 +1,343 @@
+{
+  "id": "association",
+  "question": "For Tech in Dragapult mirror matches in January Play, report with-card and without-card result counts, win percentages, the percentage-point difference, evidence status, and rank. Does this prove Tech causally changes the outcome?",
+  "calls": [
+    {
+      "tool": "get_model",
+      "arguments": {
+        "model_name": "matchup_suggestions"
+      },
+      "result": {
+        "name": "matchup_suggestions",
+        "dimensions": {
+          "game": {
+            "description": "Supported importer game, currently PTCG only; this model does not provide Pocket comparisons.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "format": {
+            "description": "Recorded tournament format. Filter one compatible game/format/period cohort before interpreting rates.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "set_name": {
+            "description": "Existing set/meta period assignment, not a new legality calendar.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "archetype": {
+            "description": "Primary archetype in the observed comparison.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "opponent_archetype": {
+            "description": "Opposing archetype in the observed comparison.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "suggested_card": {
+            "description": "Legacy field name for the observed card; inclusion is not a recommendation to add it.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "card_kind": {
+            "description": "Recorded card type.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "source": {
+            "description": "Tournament data provider.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "event_type": {
+            "description": "Tournament setting: online, in_person, or unknown.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "evidence_status": {
+            "description": "missing_comparison_group, insufficient_matches, insufficient_decks, or meets_sample_thresholds. Thresholds do not establish significance or causality.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "min_matches_per_group": {
+            "description": "Configured minimum recorded results in each comparison group.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "min_decks_per_group": {
+            "description": "Configured minimum distinct tournament entries in each group; not independent player identities.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "decklist_match_coverage": {
+            "description": "Percentage of valid classified matchup results with published own-card rows; display at the full cohort/card grain.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "association_rank": {
+            "description": "Descriptive within-cohort ranking by observed rate difference, only after both group thresholds pass. Null otherwise.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          }
+        },
+        "measures": {
+          "sample_size": {
+            "description": "With-card player-result observations; filter one card and compatible cohorts."
+          },
+          "avg_win_rate_with_card": {
+            "description": "Pooled wins with card / card-match observations, percentage (0-100); ties count as non-wins. Null with no observations."
+          },
+          "avg_win_rate_without_card": {
+            "description": "Pooled wins without card / without-card observations, percentage (0-100); ties count as non-wins. Null with no observations."
+          },
+          "avg_relevance_score": {
+            "description": "Observed difference of pooled win percentages, in percentage points; not a causal effect. Null without both groups. Filter compatible game/format/period cohorts."
+          },
+          "avg_suggested_quantity": {
+            "description": "Descriptive copies from observed lists, weighted once per recorded win; not an optimized prescription. Null with no wins."
+          },
+          "matches_without_card": {
+            "description": "Without-card player-result observations; filter one card and compatible cohorts."
+          },
+          "decks_with_card": {
+            "description": "With-card tournament-entry observations; filter one card, matchup and cohort. Repeated people across events are not resolved."
+          },
+          "decks_without_card": {
+            "description": "Without-card tournament-entry observations; filter one card, matchup and cohort."
+          },
+          "wins_with_card": {
+            "description": "Observed wins in the with-card comparison group."
+          },
+          "losses_with_card": {
+            "description": "Observed losses in the with-card comparison group."
+          },
+          "ties_with_card": {
+            "description": "Observed draws in the with-card comparison group."
+          },
+          "wins_without_card": {
+            "description": "Observed wins in the without-card comparison group."
+          },
+          "losses_without_card": {
+            "description": "Observed losses in the without-card comparison group."
+          },
+          "ties_without_card": {
+            "description": "Observed draws in the without-card comparison group."
+          },
+          "recorded_match_count": {
+            "description": "Valid classified player-results before own-decklist availability filtering; repeated across cards, so filter one card."
+          },
+          "matches_with_decklists": {
+            "description": "Valid classified results with published own-card rows; repeated across cards, so filter one card."
+          }
+        },
+        "calculated_measures": []
+      },
+      "is_error": false
+    },
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "matchup_suggestions",
+        "dimensions": [
+          "game",
+          "format",
+          "set_name",
+          "source",
+          "event_type",
+          "archetype",
+          "opponent_archetype",
+          "suggested_card",
+          "evidence_status",
+          "association_rank"
+        ],
+        "measures": [
+          "sample_size",
+          "matches_without_card",
+          "avg_win_rate_with_card",
+          "avg_win_rate_without_card",
+          "avg_relevance_score"
+        ],
+        "filters": [
+          {
+            "field": "source",
+            "operator": "=",
+            "value": "limitless_play"
+          },
+          {
+            "field": "event_type",
+            "operator": "=",
+            "value": "online"
+          },
+          {
+            "field": "archetype",
+            "operator": "=",
+            "value": "Dragapult"
+          },
+          {
+            "field": "opponent_archetype",
+            "operator": "=",
+            "value": "Dragapult"
+          },
+          {
+            "field": "suggested_card",
+            "operator": "=",
+            "value": "Tech"
+          }
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 1,
+        "columns": [
+          "game",
+          "format",
+          "set_name",
+          "source",
+          "event_type",
+          "archetype",
+          "opponent_archetype",
+          "suggested_card",
+          "evidence_status",
+          "association_rank",
+          "sample_size",
+          "matches_without_card",
+          "avg_win_rate_with_card",
+          "avg_win_rate_without_card",
+          "avg_relevance_score"
+        ],
+        "records": [
+          {
+            "game": "PTCG",
+            "format": "STANDARD",
+            "set_name": "Mega Evolution\u2014Phantasmal Flames",
+            "source": "limitless_play",
+            "event_type": "online",
+            "archetype": "Dragapult",
+            "opponent_archetype": "Dragapult",
+            "suggested_card": "Tech",
+            "evidence_status": "insufficient_matches",
+            "association_rank": null,
+            "sample_size": 2,
+            "matches_without_card": 2,
+            "avg_win_rate_with_card": 0.0,
+            "avg_win_rate_without_card": 50.0,
+            "avg_relevance_score": -50.0
+          }
+        ]
+      },
+      "is_error": false
+    },
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "tournament_analysis",
+        "dimensions": [
+          "tournament_name",
+          "tournament_date",
+          "set_name",
+          "source"
+        ],
+        "measures": [
+          "player_count"
+        ],
+        "filters": [
+          {
+            "field": "source",
+            "operator": "=",
+            "value": "limitless_play"
+          }
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 2,
+        "columns": [
+          "tournament_name",
+          "tournament_date",
+          "set_name",
+          "source",
+          "player_count"
+        ],
+        "records": [
+          {
+            "tournament_name": "January Play",
+            "tournament_date": "2026-01-15T00:00:00.000",
+            "set_name": "Mega Evolution\u2014Phantasmal Flames",
+            "source": "limitless_play",
+            "player_count": 4
+          },
+          {
+            "tournament_name": "February Play",
+            "tournament_date": "2026-02-16T00:00:00.000",
+            "set_name": "Mega Evolution\u2014Ascended Heroes",
+            "source": "limitless_play",
+            "player_count": 3
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "answer": {
+    "facts": {
+      "with_results": 2,
+      "without_results": 2,
+      "with_rate": 0,
+      "without_rate": 50,
+      "difference_pp": -50,
+      "evidence_status": "insufficient_matches",
+      "rank": null,
+      "causal": false
+    },
+    "explanation": "The returned online Play mirror comparison has 2 with-card results at 0% and 2 without-card results at 50%, a -50 percentage-point association. The tournament query maps its Phantasmal Flames cohort to January Play in this fixture. The evidence status is insufficient_matches and rank is null. These tiny, observational, player-result samples do not prove a causal effect; repeated players, card choices and pilot strength can confound the comparison.",
+    "caveats": [
+      "observational_not_causal",
+      "insufficient_sample"
+    ]
+  },
+  "seconds": 33.183,
+  "candidate": "ChatGPT Work assistant",
+  "fixture_sha256": "ea1b57d2d6496c9dee4de729fd3e817fd5fec5d53b191a42442d0a82d6122ade",
+  "timestamp": "2026-11-02T03:05:08.825738+00:00",
+  "candidate_input": {
+    "event": "question",
+    "id": "association",
+    "question": "For Tech in Dragapult mirror matches in January Play, report with-card and without-card result counts, win percentages, the percentage-point difference, evidence status, and rank. Does this prove Tech causally changes the outcome?",
+    "instructions": "Answer by choosing and calling the available MCP tools. Do not access local files, oracle answers, or external sources. Return a factual explanation grounded in tool results. Percentages use 0-100. Report missing values as null.",
+    "answer_schema": {
+      "action": "answer",
+      "facts": [
+        "with_results",
+        "without_results",
+        "with_rate",
+        "without_rate",
+        "difference_pp",
+        "evidence_status",
+        "rank",
+        "causal"
+      ],
+      "explanation": "Your reasoning and conclusion",
+      "caveats": [
+        "observational_not_causal",
+        "insufficient_sample"
+      ]
+    },
+    "protocol": {
+      "tool_call": {
+        "action": "call",
+        "tool": "tool_name",
+        "arguments": {}
+      },
+      "final": {
+        "action": "answer",
+        "facts": {},
+        "explanation": "...",
+        "caveats": []
+      }
+    },
+    "tools_reference": "tools.json"
+  },
+  "run_type": "guided_self_evaluation",
+  "blind": false
+}
