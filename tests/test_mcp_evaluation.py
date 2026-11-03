@@ -73,7 +73,8 @@ def test_real_stdio_server_and_tool_errors(warehouse):
         params = StdioServerParameters(
             command=sys.executable,
             args=[
-                str(ROOT / "semantic_layer/semantic_layer/mcp_server.py"),
+                "-m",
+                "semantic_layer.mcp_server",
                 "--database",
                 str(warehouse),
             ],
@@ -107,18 +108,15 @@ def test_real_stdio_server_and_tool_errors(warehouse):
 
 
 def test_server_is_read_only_and_import_has_no_db_side_effects(warehouse):
-    from semantic_layer.semantic_layer.mcp_server import create_server
+    from semantic_layer.runtime import ReadinessError, open_models
 
-    server = create_server(warehouse)
-    try:
+    with open_models(warehouse) as (_, models):
+        connection = next(iter(models.values())).table.get_backend()
         with pytest.raises(Exception, match="read-only"):
-            server.warehouse_connection.raw_sql(
-                "create table should_not_exist(i integer)"
-            )
-    finally:
-        server.warehouse_connection.disconnect()
-    with pytest.raises(FileNotFoundError):
-        create_server(warehouse.with_name("missing.duckdb"))
+            connection.raw_sql("create table should_not_exist(i integer)")
+    with pytest.raises(ReadinessError):
+        with open_models(warehouse.with_name("missing.duckdb")):
+            pytest.fail("A missing warehouse must not load")
     assert not warehouse.with_name("missing.duckdb").exists()
 
 

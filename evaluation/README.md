@@ -39,13 +39,13 @@ fixture records.
 ```bash
 uv sync --all-packages --locked
 uv run python -m evaluation.run build --work evaluation-results/run-001
-uv run python semantic_layer/semantic_layer/mcp_server.py \
+uv run python -m semantic_layer.mcp_server \
   --database evaluation-results/run-001/benchmark.duckdb
 ```
 
 The last command serves MCP over stdio; clients must perform the MCP handshake.
-It is not an HTTP server. `--database` overrides `PTCG_DATABASE_PATH`; otherwise
-the repository's `pokemon_tcg_pipeline.duckdb` is used. The server opens an
+It is not an HTTP server. `--database` overrides `POKEMON_TCG_DB_PATH`; otherwise
+the repository's `.data/pokemon_tcg_pipeline.duckdb` is used. The server opens an
 existing warehouse read-only and fails clearly if it is missing. Importing the
 module does not open a database. All table registrations are loaded from the
 production semantic YAML, avoiding a separate hardcoded registry.

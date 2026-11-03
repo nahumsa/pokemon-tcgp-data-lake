@@ -1,56 +1,47 @@
-#!/usr/bin/env python3
-"""Serve production semantic models over MCP against an explicit read-only database."""
+"""Serve semantic models, or check readiness without starting MCP."""
 
 import argparse
-import os
+import json
+import sys
 from pathlib import Path
 
-import ibis
-import yaml
-from boring_semantic_layer import MCPSemanticModel, from_yaml
+from boring_semantic_layer import MCPSemanticModel
 
-CONFIG = Path(__file__).with_name("boring.yml")
-DEFAULT_DATABASE = Path(__file__).resolve().parents[2] / "pokemon_tcg_pipeline.duckdb"
+from semantic_layer.runtime import ReadinessError, open_models
 
 
-def create_server(database, config_path=CONFIG):
-    database = Path(database).resolve()
-    if not database.is_file():
-        raise FileNotFoundError(
-            f"Warehouse does not exist: {database}; build dbt models first"
-        )
-    definitions = yaml.safe_load(Path(config_path).read_text())
-    connection = ibis.duckdb.connect(str(database), read_only=True)
-    try:
-        tables = {
-            item["table"]: connection.table(item["table"], database=item["database"])
-            for item in definitions.values()
-        }
-        models = from_yaml(str(config_path), tables=tables)
-        server = MCPSemanticModel(
-            models=models, name="Pokemon TCG Data Lake Semantic Layer"
-        )
-        server.warehouse_connection = connection
-        return server
-    except Exception:
-        connection.disconnect()
-        raise
-
-
-def main():
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--database",
-        type=Path,
-        default=os.environ.get("PTCG_DATABASE_PATH", DEFAULT_DATABASE),
+        "--database", type=Path, help="Override the configured warehouse for this run."
     )
-    args = parser.parse_args()
-    server = create_server(args.database)
+    parser.add_argument(
+        "--check", action="store_true", help="Check database/model readiness and exit."
+    )
+    args = parser.parse_args(argv)
     try:
-        server.run(transport="stdio", show_banner=False)
-    finally:
-        server.warehouse_connection.disconnect()
+        loader = open_models(args.database) if args.database is not None else open_models()
+        with loader as (path, models):
+            if args.check:
+                print(
+                    json.dumps(
+                        {
+                            "database": str(path),
+                            "read_only": True,
+                            "models": sorted(models),
+                        }
+                    )
+                )
+            else:
+                server = MCPSemanticModel(
+                    models=models, name="Pokemon TCG Data Lake Semantic Layer Server"
+                )
+                server.run(transport="stdio", show_banner=False)
+    except ReadinessError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

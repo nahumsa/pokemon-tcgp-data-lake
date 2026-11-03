@@ -159,7 +159,8 @@ async def evaluate(args):
     parameters = StdioServerParameters(
         command=sys.executable,
         args=[
-            str(ROOT / "semantic_layer/semantic_layer/mcp_server.py"),
+            "-m",
+            "semantic_layer.mcp_server",
             "--database",
             str(database),
         ],
