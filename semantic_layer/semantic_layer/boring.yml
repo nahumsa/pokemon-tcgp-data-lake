@@ -557,6 +557,212 @@ deck_classification:
     participants:
       expr: _.participant_id.nunique()
       description: Imported participants, including unclassified entrants; filter by classification_status for coverage.
+matchup_evidence:
+  table: mart_matchup_evidence
+  database: main_consumption
+  description: Event-level observed matchup evidence. Filter compatible game/format/period/date/event populations,
+    then apply minimum sample_size to pooled groups. Rates are wins / (wins + losses + draws). Mirrors, byes, unknown
+    archetypes and missing histories are disclosed separately. Wilson intervals are nominal binomial summaries,
+    not cluster-adjusted estimates. Use matchup_results with identical filters for provenance.
+  dimensions:
+    game:
+      expr: _.game
+      description: 'Supported importer scope: PTCG only. Pocket is not ingested; never infer it from the repository
+        name.'
+    format:
+      expr: _.format
+      description: Recorded format; filter one compatible game/format/period before interpreting estimates.
+    set_name:
+      expr: _.set_name
+      description: Existing set-period assignment, not a new legality calendar.
+    tournament_id:
+      expr: _.tournament_id
+      description: Event key. Use the same filters in matchup_results for contributing records.
+    tournament_name:
+      expr: _.tournament_name
+      description: Source event name.
+    tournament_url:
+      expr: _.tournament_url
+      description: Original source standings URL.
+    tournament_date:
+      expr: _.tournament_date
+      description: Source local event start date; supports explicit date-window filters.
+    source:
+      expr: _.source
+      description: Tournament data provider.
+    event_type:
+      expr: _.event_type
+      description: 'Tournament setting: online, in_person, or unknown.'
+    p1_archetype:
+      expr: _.p1_archetype
+      description: Primary archetype; Unknown retains unclassified entrants.
+    p1_sub_archetype:
+      expr: _.p1_sub_archetype
+      description: Primary variant or source label.
+    p2_archetype:
+      expr: _.p2_archetype
+      description: Opponent archetype; Unknown includes missing-history markers.
+    p2_sub_archetype:
+      expr: _.p2_sub_archetype
+      description: Opponent variant or source label.
+    matchup_type:
+      expr: _.matchup_type
+      description: played, mirror, bye, unknown_archetype, invalid_result, or missing_history; only played contributes
+        to win-rate estimates.
+  measures:
+    sample_size:
+      expr: _["sample_size"].sum()
+      description: Eligible directed non-mirror WIN/LOSS/TIE results; not independent physical matches.
+    wins:
+      expr: _["wins"].sum()
+      description: Wins in the eligible sample.
+    losses:
+      expr: _["losses"].sum()
+      description: Losses in the eligible sample.
+    ties:
+      expr: _["ties"].sum()
+      description: Draws in the eligible sample; non-wins for the win-rate formula.
+    recorded_results:
+      expr: _["recorded_results"].sum()
+      description: All imported player-result records, including excluded categories; not a completeness guarantee.
+    bye_results:
+      expr: _["bye_results"].sum()
+      description: Explicit BYE records, excluded from the win-rate denominator.
+    mirror_results:
+      expr: _["mirror_results"].sum()
+      description: Same-primary-archetype results, excluded from binomial estimates; inspect raw results for W/L/D.
+    unknown_archetype_results:
+      expr: _["unknown_archetype_results"].sum()
+      description: Results with either archetype unclassified; excluded from estimates.
+    invalid_results:
+      expr: _["invalid_results"].sum()
+      description: Results outside WIN/LOSS/TIE; excluded from estimates.
+    participants_without_history:
+      expr: _["participants_without_history"].sum()
+      description: Imported entries with no own result records; zero observations is not zero performance.
+    win_rate:
+      expr: _["wins"].sum() * 100.0 / _["sample_size"].sum().nullif(0)
+      description: 100 * wins / (wins + losses + draws), pooled after filters. Null for zero eligible results.
+    win_rate_lower_95:
+      expr: (((_["wins"].sum() + 1.9207294103470627 - 1.959963984540054 * (_["wins"].sum() * (1 - _["wins"].sum()
+        * 1.0 / _["sample_size"].sum().nullif(0)) + 0.9603647051735313).sqrt()) / (_["sample_size"].sum().nullif(0)
+        + 3.8414588206941254)) * 100.0).clip(0, 100).round(10)
+      description: Nominal 95% Wilson binomial win-proportion bound, recomputed from pooled counts. Assumes independent
+        observations; repeated pilots, mirrored perspectives and incomplete histories violate that assumption. Not
+        a forecast or causal claim. Null for zero eligible results.
+    win_rate_upper_95:
+      expr: (((_["wins"].sum() + 1.9207294103470627 + 1.959963984540054 * (_["wins"].sum() * (1 - _["wins"].sum()
+        * 1.0 / _["sample_size"].sum().nullif(0)) + 0.9603647051735313).sqrt()) / (_["sample_size"].sum().nullif(0)
+        + 3.8414588206941254)) * 100.0).clip(0, 100).round(10)
+      description: Nominal 95% Wilson binomial win-proportion bound, recomputed from pooled counts. Assumes independent
+        observations; repeated pilots, mirrored perspectives and incomplete histories violate that assumption. Not
+        a forecast or causal claim. Null for zero eligible results.
+matchup_results:
+  table: fct_matchup_results
+  database: main_semantic
+  description: Contributing imported player-result perspectives and one explicit marker per entrant without history.
+    Match IDs identify player/event/round records, not unique pairings. Use the same cohort filters as matchup_evidence;
+    filter matchup_type=played for its denominator. Counts do not prove complete event histories.
+  dimensions:
+    game:
+      expr: _.game
+      description: 'Supported importer scope: PTCG only. Pocket is not ingested; never infer it from the repository
+        name.'
+    format:
+      expr: _.format
+      description: Recorded format; filter one compatible game/format/period before interpreting estimates.
+    set_name:
+      expr: _.set_name
+      description: Existing set-period assignment, not a new legality calendar.
+    tournament_id:
+      expr: _.tournament_id
+      description: Event key. Use the same filters in matchup_results for contributing records.
+    tournament_name:
+      expr: _.tournament_name
+      description: Source event name.
+    tournament_url:
+      expr: _.tournament_url
+      description: Original source standings URL.
+    tournament_date:
+      expr: _.tournament_date
+      description: Source local event start date; supports explicit date-window filters.
+    source:
+      expr: _.source
+      description: Tournament data provider.
+    event_type:
+      expr: _.event_type
+      description: 'Tournament setting: online, in_person, or unknown.'
+    p1_archetype:
+      expr: _.p1_archetype
+      description: Primary archetype; Unknown retains unclassified entrants.
+    p1_sub_archetype:
+      expr: _.p1_sub_archetype
+      description: Primary variant or source label.
+    p2_archetype:
+      expr: _.p2_archetype
+      description: Opponent archetype; Unknown includes missing-history markers.
+    p2_sub_archetype:
+      expr: _.p2_sub_archetype
+      description: Opponent variant or source label.
+    matchup_type:
+      expr: _.matchup_type
+      description: played, mirror, bye, unknown_archetype, invalid_result, or missing_history; only played contributes
+        to win-rate estimates.
+    match_id:
+      expr: _.match_id
+      description: Player-perspective record ID; null on missing-history markers.
+    participant_id:
+      expr: _.participant_id
+      description: Event-specific entrant ID, not lifetime player identity.
+    player_name:
+      expr: _.player_name
+      description: Imported primary player display name.
+    decklist_link:
+      expr: _.decklist_link
+      description: Source decklist link when published.
+    opponent_id:
+      expr: _.opponent_id
+      description: Event-specific opponent ID when recorded.
+    opponent_name:
+      expr: _.opponent_name
+      description: Source opponent display name; BYE is explicit.
+    round:
+      expr: _.round
+      description: Source round label.
+    result:
+      expr: _.result
+      description: Raw WIN/LOSS/TIE or other source outcome; null on missing-history markers.
+  measures:
+    sample_size:
+      expr: _["sample_size"].sum()
+      description: Eligible directed non-mirror WIN/LOSS/TIE results; not independent physical matches.
+    wins:
+      expr: _["wins"].sum()
+      description: Wins in the eligible sample.
+    losses:
+      expr: _["losses"].sum()
+      description: Losses in the eligible sample.
+    ties:
+      expr: _["ties"].sum()
+      description: Draws in the eligible sample; non-wins for the win-rate formula.
+    recorded_results:
+      expr: _["recorded_results"].sum()
+      description: All imported player-result records, including excluded categories; not a completeness guarantee.
+    bye_results:
+      expr: _["bye_results"].sum()
+      description: Explicit BYE records, excluded from the win-rate denominator.
+    mirror_results:
+      expr: _["mirror_results"].sum()
+      description: Same-primary-archetype results, excluded from binomial estimates; inspect raw results for W/L/D.
+    unknown_archetype_results:
+      expr: _["unknown_archetype_results"].sum()
+      description: Results with either archetype unclassified; excluded from estimates.
+    invalid_results:
+      expr: _["invalid_results"].sum()
+      description: Results outside WIN/LOSS/TIE; excluded from estimates.
+    participants_without_history:
+      expr: _["participants_without_history"].sum()
+      description: Imported entries with no own result records; zero observations is not zero performance.
 
 event_coverage:
   table: mart_event_coverage

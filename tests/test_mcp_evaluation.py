@@ -88,6 +88,7 @@ def test_real_stdio_server_and_tool_errors(warehouse):
                     "get_model",
                     "query_model",
                     "get_time_range",
+                    "query_matchup_evidence_with_minimum_sample",
                 } <= names
                 result = await client.call_tool(
                     "query_model",
@@ -99,6 +100,21 @@ def test_real_stdio_server_and_tool_errors(warehouse):
                 )
                 assert not result.isError
                 assert decode(result)["records"] == [{"total_participants": 11}]
+                evidence = await client.call_tool(
+                    "query_matchup_evidence_with_minimum_sample", {"min_sample_size": 1}
+                )
+                assert not evidence.isError
+                assert decode(evidence)["qualifying_groups"] >= 1
+                coverage = await client.call_tool(
+                    "query_model",
+                    {
+                        "model_name": "event_coverage",
+                        "measures": ["event_count"],
+                        "get_chart": False,
+                    },
+                )
+                assert not coverage.isError
+                assert decode(coverage)["records"] == [{"event_count": 3}]
                 invalid = await client.call_tool(
                     "query_model", {"model_name": "does_not_exist", "get_chart": False}
                 )

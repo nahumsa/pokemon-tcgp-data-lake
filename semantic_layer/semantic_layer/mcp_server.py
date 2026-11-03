@@ -7,6 +7,7 @@ from pathlib import Path
 
 from boring_semantic_layer import MCPSemanticModel
 
+from semantic_layer.matchups import register_matchup_tools
 from semantic_layer.runtime import ReadinessError, open_models
 
 
@@ -36,6 +37,7 @@ def main(argv: list[str] | None = None) -> int:
                 server = MCPSemanticModel(
                     models=models, name="Pokemon TCG Data Lake Semantic Layer Server"
                 )
+                register_matchup_tools(server, models)
                 server.run(transport="stdio", show_banner=False)
     except ReadinessError as exc:
         print(str(exc), file=sys.stderr)
