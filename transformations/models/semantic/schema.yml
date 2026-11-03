@@ -156,7 +156,7 @@ models:
         tests:
           - accepted_values:
               arguments:
-                values: ["WIN", "LOSS", "TIE"]
+                values: ["WIN", "LOSS", "TIE", "BYE"]
 
   - name: dim_pokemon_sets
     description: "Dimension table containing Pokémon TCG expansion sets and their legality dates."
@@ -225,3 +225,4 @@ models:
               arguments:
                 to: ref('meta_decks')
                 field: rule_id
+

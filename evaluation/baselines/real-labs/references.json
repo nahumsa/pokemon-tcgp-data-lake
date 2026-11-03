@@ -1,0 +1,89 @@
+{
+  "real_entries": {
+    "sql": "select count(*) as entries from entries",
+    "expected": {
+      "entries": 3973
+    }
+  },
+  "real_records": {
+    "sql": "select count(*) as player_records from results",
+    "expected": {
+      "player_records": 33027
+    }
+  },
+  "real_latest_matches": {
+    "sql": "select (select count(distinct (round,low,high)) from pairings where event='0079' and played) as played_pairings, (select count(*) from results where event='0079') as player_records",
+    "expected": {
+      "played_pairings": 7112,
+      "player_records": 14239
+    }
+  },
+  "real_byes": {
+    "sql": "select count(*) as byes from results where bye",
+    "expected": {
+      "byes": 69
+    }
+  },
+  "real_classification": {
+    "sql": "select count(*) as missing_entries from entries where archetype is null and not published",
+    "expected": {
+      "missing_entries": 1751
+    }
+  },
+  "real_dragapult_share": {
+    "sql": "select count(*) filter(where archetype='Dragapult') as archetype_entries,count(*) as all_entries,100.0*count(*) filter(where archetype='Dragapult')/count(*) as meta_share from entries",
+    "expected": {
+      "archetype_entries": 649,
+      "all_entries": 3973,
+      "meta_share": 16.335263025421597
+    }
+  },
+  "real_dragapult_rate": {
+    "sql": "select count(*) filter(where outcome='WIN') as wins,count(*) as results,100.0*count(*) filter(where outcome='WIN')/nullif(count(*),0) as win_rate from results r join entries e on r.event=e.event and r.player_id=e.player_id where e.archetype='Dragapult'",
+    "expected": {
+      "wins": 2285,
+      "results": 5507,
+      "win_rate": 41.49264572362448
+    }
+  },
+  "real_card": {
+    "sql": "select count(distinct(c.event,c.player_id)) as decks,sum(c.quantity) as copies from cards c join entries e on c.event=e.event and c.player_id=e.player_id where c.name='Dreepy' and e.archetype is not null",
+    "expected": {
+      "decks": 712,
+      "copies": 2788
+    }
+  },
+  "real_player": {
+    "sql": "select count(*) filter(where outcome='WIN') as wins,count(*) filter(where outcome='TIE') as ties,count(*) as results,100.0*count(*) filter(where outcome='WIN')/nullif(count(*),0) as win_rate from results where event='0079' and player_id=127",
+    "expected": {
+      "wins": 14,
+      "ties": 2,
+      "results": 17,
+      "win_rate": 82.3529411764706
+    }
+  },
+  "real_association": {
+    "sql": "\n      with membership as (select distinct event,player_id from cards where name='Dusknoir'),\n      eligible as (\n        select r.*, (m.player_id is not null) as with_card\n        from results r\n        join entries own on (r.event=own.event and r.player_id=own.player_id)\n        join entries opp on (r.event=opp.event and r.opponent_id=opp.player_id)\n        left join membership m on (r.event=m.event and r.player_id=m.player_id)\n        where own.archetype='Dragapult' and opp.archetype='Dragapult' and own.published\n      ), grouped as (\n        select count(*) filter(where with_card) as with_results,\n          count(*) filter(where not with_card) as without_results,\n          count(*) filter(where with_card and outcome='WIN') as with_wins,\n          count(*) filter(where not with_card and outcome='WIN') as without_wins,\n          count(distinct (event,player_id)) filter(where with_card) as with_decks,\n          count(distinct (event,player_id)) filter(where not with_card) as without_decks\n        from eligible\n      )\n    select with_results,without_results,100.0*with_wins/nullif(with_results,0) as with_rate,\n        100.0*without_wins/nullif(without_results,0) as without_rate,\n        100.0*with_wins/nullif(with_results,0)-100.0*without_wins/nullif(without_results,0) as difference_pp,\n        case when without_results=0 then 'missing_comparison_group'\n          when least(with_results,without_results)<10 then 'insufficient_matches'\n          when least(with_decks,without_decks)<3 then 'insufficient_decks' else 'meets_sample_thresholds' end as evidence_status,\n        false as causal from grouped",
+    "expected": {
+      "with_results": 297,
+      "without_results": 1257,
+      "with_rate": 35.01683501683502,
+      "without_rate": 41.84566428003182,
+      "difference_pp": -6.828829263196802,
+      "evidence_status": "meets_sample_thresholds",
+      "causal": false
+    }
+  },
+  "real_online": {
+    "sql": "select count(*) as entries from entries e join events t on e.event=t.event where t.event_type='online'",
+    "expected": {
+      "entries": 0
+    }
+  },
+  "real_forecast": {
+    "sql": "select false as answerable",
+    "expected": {
+      "answerable": false
+    }
+  }
+}

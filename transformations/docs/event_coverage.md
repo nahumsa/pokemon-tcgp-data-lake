@@ -89,7 +89,7 @@ stored analytical population. Participant count mismatches block readiness.
 Run from the repository root after ingestion and a successful dbt rebuild:
 
 ```bash
-uv run --package pokemon-tcg-semantic-layer python -m semantic_layer.semantic_layer.readiness \
+uv run --package pokemon-tcg-semantic-layer python -m semantic_layer.readiness \
   https://labs.limitlesstcg.com/0078/standings
 ```
 
@@ -103,7 +103,7 @@ arguments or an event absent from the coverage table.
 Choose lower thresholds explicitly for reports that disclose partial coverage:
 
 ```bash
-uv run --package pokemon-tcg-semantic-layer python -m semantic_layer.semantic_layer.readiness \
+uv run --package pokemon-tcg-semantic-layer python -m semantic_layer.readiness \
   https://labs.limitlesstcg.com/0078/standings \
   --min-decklist-pct 99 --min-classification-pct 99 --max-age-hours 24 \
   --output markdown

@@ -18,6 +18,7 @@ The system is designed following the principle of **Separation of Concerns** and
 ### Prerequisites
 
 - **Python 3.12+**
+- **GNU Make**
 - **[uv](https://github.com/astral-sh/uv)**: High-performance Python package manager.
 - **Docker & Docker Compose** (optional, for containerized execution).
 
@@ -27,14 +28,18 @@ The system is designed following the principle of **Separation of Concerns** and
 
     ```bash
     git clone <repo-url>
-    cd pokemon-tcg-data-lake
+    cd pokemon-tcgp-data-lake
     ```
 
-2. **Synchronize Workspace**:
+2. **Install dependencies and validate the checkout**:
 
     ```bash
-    uv sync --all-packages --locked
+    make setup
+    make check
     ```
+
+Run shared commands from the repository root (`make help` lists them). CI uses
+these same targets. Agent guidance starts at [AGENTS.md](AGENTS.md).
 
 ---
 
@@ -46,13 +51,13 @@ Extract data from tournament sources and load into DuckDB.
 
 ```bash
 # Run incremental ingestion (current month)
-uv run --package pokemon-tcg-ingestion python -m ingestion.main
+make ingest
 
 # Run incremental ingestion (for a specific month)
-uv run --package pokemon-tcg-ingestion python -m ingestion.main --month 2026-01
+make ingest INGEST_ARGS="--month 2026-01"
 
 # Run backfill (could take a while)
-uv run --package pokemon-tcg-ingestion python -m ingestion.main --backfill
+make ingest INGEST_ARGS="--backfill"
 ```
 
 ### 2. Transformations (T)
@@ -60,9 +65,8 @@ uv run --package pokemon-tcg-ingestion python -m ingestion.main --backfill
 Model the data using `dbt`.
 
 ```bash
-cd transformations
-uv run dbt deps
-uv run dbt run
+make dbt-build
+make dbt-test
 ```
 
 ### Limitless Labs regional and international events
@@ -74,16 +78,14 @@ decklists do not exclude players from the participant dimension.
 
 ```bash
 # Fetch, save a reproducible snapshot, and merge into the local DuckDB database
-uv run --package pokemon-tcg-ingestion python -m ingestion.labs --latest 3 --snapshot data/limitless_labs/latest.json.gz
+make ingest-labs INGEST_ARGS="--latest 3 --snapshot data/limitless_labs/latest.json.gz"
 
 # Reload a snapshot you previously saved locally without fetching from Labs
-uv run --package pokemon-tcg-ingestion python -m ingestion.labs --from-snapshot data/limitless_labs/latest.json.gz
+make ingest-labs INGEST_ARGS="--from-snapshot data/limitless_labs/latest.json.gz"
 
-cd transformations
-uv run dbt deps
-uv run dbt seed --profiles-dir .
-uv run dbt run --profiles-dir .
-uv run dbt test --profiles-dir .
+make dbt-build
+make dbt-test
+make mcp-check
 ```
 
 Labs URLs identify events separately from Play URLs, so rerunning an import merges
@@ -105,17 +107,25 @@ card-based archetype classifier. Events without published decks have no archetyp
 data until Labs publishes it. The local dbt profile does not install network
 extensions; these transformations operate entirely on the local DuckDB tables.
 
-### CI validation
+### Runtime paths and validation
 
-CI tests ingestion logic with mocked requests, small synthetic inputs, and
-isolated temporary DuckDB databases. The tests are independent of saved tournament
-snapshots and existing pipeline databases. Native dbt unit tests validate match reconciliation and event counts with mocked
-parent models in an in-memory DuckDB database. Ruff and dbt parsing check code
-and project configuration without loading tournament data.
+Every worktree defaults to its own ignored `.data/` directory. Use
+`make DATA_DIR=/absolute/task/path <target>` to isolate another task. Ingestion,
+dbt, and MCP share `POKEMON_TCG_DB_PATH`; ingestion state uses
+`POKEMON_TCG_DLT_STATE_DIR`. Explicit overrides must be absolute paths.
 
-To validate a real-data analytics rebuild, fetch the latest events or reload a
-locally saved snapshot, then run the dbt commands above. This workflow is separate
-from the CI ingestion tests.
+See the [runtime runbook](docs/runtime.md) for existing-database migration,
+configuration, preflight failures, and load recovery. Database files are no longer
+versioned. MCP reads an existing database in read-only mode and never creates one
+when its configured path is missing.
+
+`make check` runs Ruff, dbt parsing, Python tests, and native dbt unit tests. Tests
+use synthetic inputs and temporary/in-memory databases. They do not fetch live
+events or require saved tournament data. SQL transformation logic tests mock every
+parent model; Python tests cover ingestion, runtime, and semantic expressions.
+`make dbt-test` checks a built dataset separately. A real-data rebuild is an
+explicit ingestion/replay followed by `make dbt-build`, with its results recorded
+separately from unit tests.
 
 ## 📦 Monorepo Workflow
 
@@ -255,16 +265,29 @@ We use **Ruff** for high-performance Python linting and formatting, and **SQLFlu
 
 ```bash
 # Lint Python code
-uv run ruff check .
+make lint
 
-# Lint SQL models
-cd transformations
-uv run sqlfluff lint models
+# Lint SQL models (or set SQL_PATHS to the changed paths)
+make lint-sql
 ```
 
 ### CI/CD
 
-Our GitHub Actions pipeline (`.github/workflows/ci.yml`) runs Ruff, dbt project parsing, ingestion tests, and native dbt unit tests on pull requests and pushes to `main`.
+Our GitHub Actions pipeline runs `make setup` and `make check` on pull requests
+and pushes to `main`, and verifies that logic checks did not create a pipeline
+database. No data fetch or MCP startup is performed by CI.
 
 ---
 
+
+## Evaluate an agent through MCP
+
+The [MCP analytics benchmark](evaluation/README.md) runs question-to-answer
+assessments through the stdio server and retains actual queries and answers.
+The [real-data comparison](evaluation/baselines/real-labs/README.md) uses 3,973
+entries and 33,027 result records from Gdańsk and Puebla. All 11 quantitative
+answers matched independent raw-API reference SQL, and a future-winner question
+was correctly declined. The [synthetic baseline](evaluation/baselines/assistant-first/report.md)
+is retained as a separate controlled test. Both completed runs were guided,
+non-blinded assistant self-evaluations; neither is a general model accuracy estimate.
+CI checks the transport, references and archived answers, not a new model run.

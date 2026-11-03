@@ -1,13 +1,48 @@
 """Readiness is a policy decision independent of source completion."""
 
 from datetime import datetime, timezone
+import json
+import sys
 
+import duckdb
 import pytest
 
-from semantic_layer.semantic_layer.readiness import ReadinessPolicy, check_readiness
+from semantic_layer.readiness import ReadinessPolicy, check_readiness
 
 
 NOW = datetime(2026, 10, 31, 12, tzinfo=timezone.utc)
+
+
+@pytest.mark.parametrize("explicit_database", [False, True])
+def test_cli_uses_shared_database_path_and_explicit_override(
+    tmp_path, monkeypatch, capsys, complete_event, explicit_database
+):
+    from semantic_layer import readiness
+
+    database = tmp_path / "task.duckdb"
+    duckdb.connect(str(database)).close()
+    missing = tmp_path / "wrong.duckdb"
+    monkeypatch.setenv(
+        "POKEMON_TCG_DB_PATH", str(missing if explicit_database else database)
+    )
+    now = datetime.now(timezone.utc).isoformat()
+    complete_event.update(
+        extracted_at=now, last_successful_ingestion_at=now, transformed_at=now
+    )
+
+    def read_event(connection, url):
+        assert url == "https://example/event"
+        assert connection.execute("pragma database_list").fetchone()[2] == str(database)
+        return complete_event
+
+    monkeypatch.setattr(readiness, "read_event_coverage", read_event)
+    argv = ["readiness", "https://example/event"]
+    if explicit_database:
+        argv += ["--database", str(database)]
+    monkeypatch.setattr(sys, "argv", argv)
+    readiness.main()
+    assert json.loads(capsys.readouterr().out)["ready"] is True
+    assert not missing.exists()
 
 
 @pytest.fixture
@@ -80,7 +115,7 @@ def test_invalid_policy_is_rejected(kwargs):
 
 
 def test_report_section_discloses_zero_unknown_and_reasons(complete_event):
-    from semantic_layer.semantic_layer.readiness import coverage_section
+    from semantic_layer.readiness import coverage_section
 
     complete_event.update(
         tournament_url="https://labs.limitlesstcg.com/event",

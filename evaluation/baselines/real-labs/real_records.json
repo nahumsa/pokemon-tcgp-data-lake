@@ -1,0 +1,129 @@
+{
+  "id": "real_records",
+  "question": "How many player-result records exist across the snapshot? These are not unique physical matches.",
+  "calls": [
+    {
+      "tool": "get_model",
+      "arguments": {
+        "model_name": "matches"
+      },
+      "result": {
+        "name": "matches",
+        "dimensions": {
+          "match_id": {
+            "description": "Identifier for a player/event/raw-round record, not a unique played match.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "participant_id": {
+            "description": "Primary player participant identifier.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "opponent_id": {
+            "description": "Opponent participant identifier when available.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "tournament_id": {
+            "description": "Tournament identifier.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "result": {
+            "description": "Match outcome: WIN, LOSS, or TIE.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "opponent_name": {
+            "description": "Name of the opponent player.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          },
+          "round": {
+            "description": "Tournament round number.",
+            "is_time_dimension": false,
+            "smallest_time_grain": null
+          }
+        },
+        "measures": {
+          "perspective_record_count": {
+            "description": "Player-perspective record count, including byes and unresolved records."
+          },
+          "match_count": {
+            "description": "Compatibility alias for perspective_record_count; includes byes and unresolved records, not unique played matches."
+          }
+        },
+        "calculated_measures": []
+      },
+      "is_error": false
+    },
+    {
+      "tool": "query_model",
+      "arguments": {
+        "model_name": "matches",
+        "measures": [
+          "perspective_record_count"
+        ],
+        "get_chart": false
+      },
+      "result": {
+        "total_rows": 1,
+        "columns": [
+          "perspective_record_count"
+        ],
+        "records": [
+          {
+            "perspective_record_count": 33027
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "candidate_input": {
+    "event": "question",
+    "id": "real_records",
+    "question": "How many player-result records exist across the snapshot? These are not unique physical matches.",
+    "instructions": "Answer by choosing and calling the available MCP tools. Do not access local files, oracle answers, or external sources. Return a factual explanation grounded in tool results. Percentages use 0-100. Report missing values as null.",
+    "answer_schema": {
+      "action": "answer",
+      "facts": [
+        "player_records"
+      ],
+      "explanation": "Your reasoning and conclusion",
+      "caveats": [
+        "perspectives_not_pairings"
+      ]
+    },
+    "protocol": {
+      "tool_call": {
+        "action": "call",
+        "tool": "tool_name",
+        "arguments": {}
+      },
+      "final": {
+        "action": "answer",
+        "facts": {},
+        "explanation": "...",
+        "caveats": []
+      }
+    },
+    "tools_reference": "tools.json"
+  },
+  "answer": {
+    "facts": {
+      "player_records": 33027
+    },
+    "explanation": "The player-perspective fact contains 33,027 result records, including bye or unresolved histories. A pairing may contribute a history for each player, so this count cannot be reported as unique played matches.",
+    "caveats": [
+      "perspectives_not_pairings"
+    ]
+  },
+  "seconds": 9.777,
+  "candidate": "ChatGPT Work assistant / real-data self-evaluation",
+  "fixture_sha256": "ffc9fa0ff8e5fb60a6468a9ec372ed240e9b9d6746edde5edf5eaa940e11700a",
+  "timestamp": "2026-11-02T16:02:16.382356+00:00",
+  "run_type": "real_data_guided_self_evaluation",
+  "blind": false
+}

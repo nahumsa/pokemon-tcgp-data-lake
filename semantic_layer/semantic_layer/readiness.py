@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from semantic_layer.runtime import database_path
+
 
 @dataclass(frozen=True)
 class ReadinessPolicy:
@@ -159,7 +161,7 @@ def main():
     parser.add_argument(
         "--database",
         type=Path,
-        default=Path(__file__).resolve().parents[2] / "pokemon_tcg_pipeline.duckdb",
+        help="Override POKEMON_TCG_DB_PATH or the task-local default database.",
     )
     parser.add_argument("--min-decklist-pct", type=float, default=100)
     parser.add_argument("--min-history-pct", type=float, default=100)
@@ -178,7 +180,8 @@ def main():
         parser.error(str(exc))
     import duckdb
 
-    with duckdb.connect(str(args.database), read_only=True) as con:
+    database = args.database if args.database is not None else database_path()
+    with duckdb.connect(str(database), read_only=True) as con:
         con.execute("set timezone = 'UTC'")
         con.begin()
         event = read_event_coverage(con, args.tournament_url)

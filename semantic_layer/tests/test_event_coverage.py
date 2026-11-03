@@ -92,7 +92,7 @@ def test_legacy_and_empty_events_have_unknown_extraction_coverage(coverage_db):
 
 
 def test_live_audit_check_detects_ingestion_after_transformation(coverage_db):
-    from semantic_layer.semantic_layer.readiness import read_event_coverage
+    from semantic_layer.readiness import read_event_coverage
 
     # Materialize a model snapshot, then advance the raw audit independently.
     coverage_db.execute(

@@ -1,0 +1,100 @@
+{
+  "candidate": "ChatGPT Work assistant / real-data self-evaluation",
+  "fixture_sha256": "ffc9fa0ff8e5fb60a6468a9ec372ed240e9b9d6746edde5edf5eaa940e11700a",
+  "passed": 12,
+  "total": 12,
+  "results": [
+    {
+      "id": "real_entries",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 3,
+      "tool_errors": 0
+    },
+    {
+      "id": "real_records",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "real_latest_matches",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "real_byes",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 1,
+      "tool_errors": 0
+    },
+    {
+      "id": "real_classification",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "real_dragapult_share",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 3,
+      "tool_errors": 0
+    },
+    {
+      "id": "real_dragapult_rate",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "real_card",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "real_player",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "real_association",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 2,
+      "tool_errors": 0
+    },
+    {
+      "id": "real_online",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 1,
+      "tool_errors": 0
+    },
+    {
+      "id": "real_forecast",
+      "passed": true,
+      "failures": [],
+      "tool_calls": 1,
+      "tool_errors": 0
+    }
+  ],
+  "scope": "Frozen real public tournament snapshot; facts and declared caveats are scored. Free-text explanation still needs review.",
+  "synthetic": false,
+  "questions_sha256": "48f4315d7a5fbd191b2e9cc862bd544a8f4ab2c84e65bd7031a4330f5112b7a1",
+  "run_type": "real_data_guided_self_evaluation",
+  "blind": false,
+  "quantitative_passed": 11,
+  "quantitative_total": 11,
+  "caveats": "Same assistant constructed the questions and answered; not a blinded independent-model evaluation. Source Labs standings may contain errors."
+}

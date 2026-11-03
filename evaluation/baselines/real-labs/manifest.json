@@ -1,0 +1,40 @@
+{
+  "synthetic": false,
+  "source": "Limitless Labs public Masters TCG API",
+  "staging": "Explicit normalization of saved production-importer JSON to raw dbt tables; dlt runtime excluded",
+  "database": "Frozen real benchmark.duckdb; source snapshot supplied separately",
+  "sha256": "ffc9fa0ff8e5fb60a6468a9ec372ed240e9b9d6746edde5edf5eaa940e11700a",
+  "snapshot_sha256": "333614dcde9a6c37bd2193af4ba6193116e1030b40739227692920444cd25ccb",
+  "events": [
+    {
+      "tournament_page": "https://labs.limitlesstcg.com/0079/standings",
+      "data_date": "2026-10-31",
+      "data_name": "Regional Championship Gdańsk",
+      "data_players": "1739",
+      "source": "limitless_labs",
+      "event_type": "in_person"
+    },
+    {
+      "tournament_page": "https://labs.limitlesstcg.com/0078/standings",
+      "data_date": "2026-10-24",
+      "data_name": "Regional Championship Puebla",
+      "data_players": "2234",
+      "source": "limitless_labs",
+      "event_type": "in_person"
+    }
+  ],
+  "row_counts": {
+    "tournaments": 2,
+    "tournament_participants": 3973,
+    "participant_deck": 2222,
+    "participant_matches": 33027
+  },
+  "frozen_at": "2026-11-02T16:00:36.433747+00:00",
+  "api_cache_files": 2261,
+  "reference_sha256": "b884afe2c3b5705cbd2048ede759e7a9eb4f907d8d47740c188df640177b289c",
+  "reference_method": "Independent SQL over original cached API standings, pairings and decklists; no production marts",
+  "definition_sha256": {
+    "semantic_layer/semantic_layer/boring.yml": "cfa0249df666c8e5d36e55a78a8f4912eebc9c0123b76b501b9ce3512d015d46",
+    "transformations/seeds/meta_decks.csv": "b47172ac64a776723df7fdfb5194d695751bf85716a1a291672e066c8f0878a9"
+  }
+}

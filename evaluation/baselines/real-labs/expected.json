@@ -1,0 +1,53 @@
+{
+  "real_entries": {
+    "entries": 3973
+  },
+  "real_records": {
+    "player_records": 33027
+  },
+  "real_latest_matches": {
+    "played_pairings": 7112,
+    "player_records": 14239
+  },
+  "real_byes": {
+    "byes": 69
+  },
+  "real_classification": {
+    "missing_entries": 1751
+  },
+  "real_dragapult_share": {
+    "archetype_entries": 649,
+    "all_entries": 3973,
+    "meta_share": 16.335263025421597
+  },
+  "real_dragapult_rate": {
+    "wins": 2285,
+    "results": 5507,
+    "win_rate": 41.49264572362448
+  },
+  "real_card": {
+    "decks": 712,
+    "copies": 2788
+  },
+  "real_player": {
+    "wins": 14,
+    "ties": 2,
+    "results": 17,
+    "win_rate": 82.3529411764706
+  },
+  "real_association": {
+    "with_results": 297,
+    "without_results": 1257,
+    "with_rate": 35.01683501683502,
+    "without_rate": 41.84566428003182,
+    "difference_pp": -6.828829263196802,
+    "evidence_status": "meets_sample_thresholds",
+    "causal": false
+  },
+  "real_online": {
+    "entries": 0
+  },
+  "real_forecast": {
+    "answerable": false
+  }
+}

@@ -18,7 +18,6 @@ from .constants import (
     PARTICIPANT_MATCHES_PRIMARY_KEY,
     PARTICIPANT_MATCHES_TABLE,
     PIPELINE_DATASET_NAME,
-    PIPELINE_DESTINATION,
     PIPELINE_NAME,
     TOURNAMENT_PARTICIPANTS_PRIMARY_KEY,
     TOURNAMENT_PARTICIPANTS_TABLE,
@@ -27,6 +26,7 @@ from .constants import (
 )
 from .http_client import get
 from .coverage import AUDIT_TABLE, build_audit, load_audits
+from .runtime import pipeline_options
 
 API_URL = "https://mew.limitlesstcg.com/labs/data/tcg"
 LABS_URL = "https://labs.limitlesstcg.com"
@@ -228,7 +228,7 @@ def extract_events(limit=3, workers=4):
 def load_rows(rows):
     pipeline = dlt.pipeline(
         pipeline_name=PIPELINE_NAME,
-        destination=PIPELINE_DESTINATION,
+        **pipeline_options(),
         dataset_name=PIPELINE_DATASET_NAME,
     )
     try:
